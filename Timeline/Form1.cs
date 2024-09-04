@@ -78,9 +78,22 @@ namespace Timeline
             }
         }
 
+        //再生バーの位置を更新
+        private void UpdatePlaybackBar(TimeSpan currentTime, TimeSpan totalTime)
+        {
+            // タイムラインの全体の幅をピクセル単位で取得
+            int timelineWidth = panel1.Width; // `panel1` はタイムラインの表示領域
+
+            // 現在の再生位置に基づいてバーの幅を計算
+            double percentage = currentTime.TotalMilliseconds / totalTime.TotalMilliseconds;
+            int newWidth = (int)(timelineWidth * percentage);
+
+            // 再生バーの位置を更新
+            panelPlaybackBar.Width = newWidth;
+        }
+
         private void PlaybackTimer_Tick(object sender, EventArgs e)
         {
-            // 現在の再生位置を取得
             var currentTime = _audioPlayer.CurrentTime;
 
             // タイムラインが終了地点に達したかを確認
@@ -93,6 +106,10 @@ namespace Timeline
             {
                 // TrackBar とラベルを更新
                 UpdateTrackBar(currentTime, _audioPlayer.TotalTime);
+                labelPlaybackTime.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
+
+                // 再生バーを更新
+                UpdatePlaybackBar(currentTime, _audioPlayer.TotalTime);
             }
         }
 
@@ -165,23 +182,6 @@ namespace Timeline
             return new TimelineObject(TimeSpan.Zero, duration, 0);
         }
 
-        private void TrackBar(object sender, EventArgs e)
-        {
-            int trackBarValue = trackBarTime.Value;
-            TimeSpan newPlaybackTime = TimeSpan.FromMilliseconds(trackBarValue);
-
-            // 再生位置をタイムラインに設定するメソッドを呼び出す
-            // _timelinePlayer.SetPlaybackPosition(newPlaybackTime); // 実際のタイムラインプレーヤーに依存
-
-            // UI に現在の時間を表示
-            labelTime.Text = $"Time: {newPlaybackTime.ToString(@"hh\:mm\:ss")}";
-
-            // タイムラインプレーヤーに再生位置を設定する
-            _audioPlayer.Stop(); // 既に再生中の場合は一旦停止
-            _audioPlayer.Load(_audioPlayer.TotalTime.ToString()); // 再読み込みして位置を移動
-            _audioPlayer.Play();
-        }
-
         private void UpdateTrackBar(TimeSpan currentTime, TimeSpan totalTime)
         {
             trackBarTime.Minimum = 0;
@@ -200,11 +200,6 @@ namespace Timeline
             }
         }
 
-        private void trackBar1_Scroll(object sender, EventArgs e)
-        {
-
-        }
-
         private void Button_Stop(object sender, EventArgs e)
         {
             _isPlaying = false;
@@ -215,6 +210,16 @@ namespace Timeline
         }
 
         private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void panel2_Paint(object sender, PaintEventArgs e)
         {
 
         }
