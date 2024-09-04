@@ -38,7 +38,6 @@
             labelTime = new Label();
             button2 = new Button();
             button3 = new Button();
-            button4 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
@@ -48,7 +47,7 @@
             panel1.BackColor = SystemColors.Info;
             panel1.Location = new Point(26, 21);
             panel1.Name = "panel1";
-            panel1.Size = new Size(1886, 185);
+            panel1.Size = new Size(554, 185);
             panel1.TabIndex = 0;
             panel1.Paint += TimelinePanel_Paint;
             // 
@@ -66,7 +65,7 @@
             // 
             trackBar1.Location = new Point(26, 212);
             trackBar1.Name = "trackBar1";
-            trackBar1.Size = new Size(1886, 56);
+            trackBar1.Size = new Size(554, 56);
             trackBar1.TabIndex = 0;
             trackBar1.Scroll += trackBar1_Scroll;
             // 
@@ -89,7 +88,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(166, 274);
+            button2.Location = new Point(306, 274);
             button2.Name = "button2";
             button2.Size = new Size(134, 55);
             button2.TabIndex = 2;
@@ -107,23 +106,12 @@
             button3.UseVisualStyleBackColor = true;
             button3.Click += Button_Stop;
             // 
-            // button4
-            // 
-            button4.Location = new Point(306, 274);
-            button4.Name = "button4";
-            button4.Size = new Size(134, 55);
-            button4.TabIndex = 4;
-            button4.Text = "Pause";
-            button4.UseVisualStyleBackColor = true;
-            button4.Click += Button_Pause;
-            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(1924, 353);
-            Controls.Add(button4);
+            ClientSize = new Size(594, 353);
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(trackBar1);
@@ -145,6 +133,5 @@
         private TrackBar trackBar1;
         private Button button2;
         private Button button3;
-        private Button button4;
     }
 }

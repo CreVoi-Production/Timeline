@@ -29,6 +29,53 @@ namespace Timeline
             UpdateTrackBar(TimeSpan.Zero, TimeSpan.FromSeconds(10)); // 10秒のタイムライン
 
             _audioPlayer = new AudioPlayer();
+
+            // ドラッグ＆ドロップの設定
+            this.AllowDrop = true;
+            this.DragEnter += Form1_DragEnter;
+            this.DragDrop += Form1_DragDrop;
+        }
+
+        //　ドラッグ＆ドロップの実装
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        //　ドラッグ＆ドロップの実装
+        private void Form1_DragDrop(object sender, DragEventArgs e)
+        {
+            var filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
+            foreach (var filePath in filePaths)
+            {
+                // 音声ファイルのロード
+                _audioPlayer.Load(filePath);
+
+                // 音声ファイルが正しくロードされているか確認
+                if (_audioPlayer.TotalTime != TimeSpan.Zero)
+                {
+                    // タイムラインオブジェクトとして追加
+                    var timelineObject = LoadAudioFile(filePath);
+                    _timeline.AddObject(timelineObject);
+
+                    // タイムラインの長さを音声ファイルの長さに合わせて更新
+                    UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
+
+                    // タイムラインを再描画
+                    panel1.Invalidate();
+                }
+                else
+                {
+                    MessageBox.Show($"音声ファイルの読み込みに失敗しました: {filePath}", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         private void PlaybackTimer_Tick(object sender, EventArgs e)
@@ -171,15 +218,6 @@ namespace Timeline
         {
 
         }
-
-        private void Button_Pause(object sender, EventArgs e)
-        {
-            if (_isPlaying)
-            {
-                _isPlaying = false;
-                _playbackTimer.Stop();
-            }
-        }
     }
 
     public class Timeline
@@ -218,37 +256,59 @@ namespace Timeline
 
     public class AudioPlayer
     {
-        private IWavePlayer _wavePlayer;
-        private WaveStream _waveStream;
+        private List<IWavePlayer> _wavePlayers;
+        private List<WaveStream> _waveStreams;
 
         public AudioPlayer()
         {
-            _wavePlayer = new WaveOutEvent();
+            _wavePlayers = new List<IWavePlayer>();
+            _waveStreams = new List<WaveStream>();
         }
 
         public void Load(string filePath)
         {
-            _waveStream = new AudioFileReader(filePath);
-            _wavePlayer.Init(_waveStream);
+            var wavePlayer = new WaveOutEvent();
+            var waveStream = new AudioFileReader(filePath);
+
+            wavePlayer.Init(waveStream);
+            _wavePlayers.Add(wavePlayer);
+            _waveStreams.Add(waveStream);
         }
 
         public void Play()
         {
-            _wavePlayer.Play();
-        }
-
-        public void Pause()
-        {
-            _wavePlayer.Pause();
+            foreach (var player in _wavePlayers)
+            {
+                player.Play();
+            }
         }
 
         public void Stop()
         {
-            _wavePlayer.Stop();
-            _waveStream.Position = 0; // 再生位置を先頭に戻す
+            foreach (var player in _wavePlayers)
+            {
+                player.Stop();
+            }
         }
 
-        public TimeSpan CurrentTime => _waveStream.CurrentTime;
-        public TimeSpan TotalTime => _waveStream.TotalTime;
+        public TimeSpan CurrentTime
+        {
+            get
+            {
+                if (_waveStreams.Count > 0)
+                    return _waveStreams[0].CurrentTime;
+                return TimeSpan.Zero;
+            }
+        }
+
+        public TimeSpan TotalTime
+        {
+            get
+            {
+                if (_waveStreams.Count > 0)
+                    return _waveStreams[0].TotalTime;
+                return TimeSpan.Zero;
+            }
+        }
     }
 }
