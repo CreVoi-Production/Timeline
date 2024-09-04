@@ -69,6 +69,13 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += Button_AddObject;
             // 
+            // trackBarTime
+            // 
+            trackBarTime.Location = new Point(0, 0);
+            trackBarTime.Name = "trackBarTime";
+            trackBarTime.Size = new Size(104, 56);
+            trackBarTime.TabIndex = 0;
+            // 
             // labelTime
             // 
             labelTime.AutoSize = true;
