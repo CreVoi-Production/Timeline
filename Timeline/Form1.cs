@@ -437,6 +437,13 @@ namespace Timeline
         {
 
         }
+
+        private void Button_Reset(object sender, EventArgs e)
+        {
+            _audioPlayer.Reset();
+            var currentTime = _audioPlayer.CurrentTime;
+            labelPlaybackTime.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
+        }
     }
 
     public class Timeline
@@ -535,6 +542,14 @@ namespace Timeline
             foreach (var player in _wavePlayers)
             {
                 player.Stop();
+            }
+        }
+
+        public void Reset()
+        {
+            foreach (var stream in _waveStreams)
+            {
+                stream.Position = 0; // Ä¶ˆÊ’u‚ğæ“ª‚É–ß‚·
             }
         }
 

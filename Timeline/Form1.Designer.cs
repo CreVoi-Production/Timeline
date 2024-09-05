@@ -41,6 +41,7 @@
             labelPlaybackTime = new Label();
             label1 = new Label();
             label2 = new Label();
+            button4 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
@@ -49,7 +50,7 @@
             panel1.BackColor = SystemColors.Info;
             panel1.Location = new Point(26, 21);
             panel1.Name = "panel1";
-            panel1.Size = new Size(554, 185);
+            panel1.Size = new Size(694, 185);
             panel1.TabIndex = 0;
             panel1.Paint += TimelinePanel_Paint;
             // 
@@ -120,7 +121,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(444, 246);
+            label1.Location = new Point(584, 246);
             label1.Name = "label1";
             label1.Size = new Size(136, 20);
             label1.TabIndex = 4;
@@ -130,19 +131,30 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(438, 223);
+            label2.Location = new Point(578, 223);
             label2.Name = "label2";
             label2.Size = new Size(142, 20);
             label2.TabIndex = 5;
             label2.Text = "Start Time : 00:00:00";
             label2.Click += Label_StartTime;
             // 
+            // button4
+            // 
+            button4.Location = new Point(586, 324);
+            button4.Name = "button4";
+            button4.Size = new Size(134, 55);
+            button4.TabIndex = 6;
+            button4.Text = "Reset";
+            button4.UseVisualStyleBackColor = true;
+            button4.Click += Button_Reset;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(594, 384);
+            ClientSize = new Size(745, 384);
+            Controls.Add(button4);
             Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(button3);
@@ -169,5 +181,6 @@
         private Panel panelPlaybackBar;
         private Label label1;
         private Label label2;
+        private Button button4;
     }
 }
