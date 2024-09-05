@@ -44,6 +44,36 @@ namespace Timeline
             panel1.MouseUp += TimelinePanel_MouseUp;
         }
 
+        // タイムラインの終了時間を表示
+        private void UpdateEndTimeLabel(TimeSpan endTime)
+        {
+            label1.Text = $"End Time: {endTime.ToString(@"hh\:mm\:ss")}";
+        }
+
+        // 終了時間を更新
+        private void UpdateTimelineEndTime()
+        {
+            TimeSpan endTime = GetMaximumEndTime();
+            UpdateEndTimeLabel(endTime);
+        }
+
+        // タイムラインオブジェクトの終了時間を比較
+        private TimeSpan GetMaximumEndTime()
+        {
+            TimeSpan maxEndTime = TimeSpan.Zero;
+
+            foreach (var obj in _timeline.GetObjects())
+            {
+                var objectEndTime = obj.StartTime + obj.Duration;
+                if (objectEndTime > maxEndTime)
+                {
+                    maxEndTime = objectEndTime;
+                }
+            }
+
+            return maxEndTime;
+        }
+
         //　ドラッグ＆ドロップの実装
         private void Form1_DragEnter(object sender, DragEventArgs e)
         {
@@ -75,6 +105,9 @@ namespace Timeline
 
                     // タイムラインの長さを音声ファイルの長さに合わせて更新
                     UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
+
+                    // タイムラインの終了時間を更新
+                    UpdateTimelineEndTime();
 
                     // タイムラインを再描画
                     panel1.Invalidate();
@@ -260,12 +293,15 @@ namespace Timeline
                 string filePath = openFileDialog.FileName;
                 _audioPlayer.Load(filePath);
 
-                // 音声ファイルをタイムラインオブジェクトとして追加
-                var timelineObject = new TimelineObject(TimeSpan.Zero, _audioPlayer.TotalTime, 0);
+                // タイムラインオブジェクトとして追加
+                var timelineObject = LoadAudioFile(filePath);
                 _timeline.AddObject(timelineObject);
 
                 // タイムラインの長さを音声ファイルの長さに合わせて更新
                 UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
+
+                // タイムラインの終了時間を更新
+                UpdateTimelineEndTime();
 
                 // タイムラインを再描画
                 panel1.Invalidate();
@@ -323,6 +359,11 @@ namespace Timeline
         }
 
         private void panel2_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void Label_EndTime(object sender, EventArgs e)
         {
 
         }
