@@ -40,6 +40,7 @@
             button3 = new Button();
             labelPlaybackTime = new Label();
             label1 = new Label();
+            label2 = new Label();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
@@ -114,16 +115,27 @@
             labelPlaybackTime.Size = new Size(165, 20);
             labelPlaybackTime.TabIndex = 0;
             labelPlaybackTime.Text = "Playback Time: 00:00:00";
+            labelPlaybackTime.Click += Label_PlaybackTime;
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(306, 223);
+            label1.Location = new Point(444, 246);
             label1.Name = "label1";
             label1.Size = new Size(136, 20);
             label1.TabIndex = 4;
             label1.Text = "End Time : 00:00:00";
             label1.Click += Label_EndTime;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(438, 223);
+            label2.Name = "label2";
+            label2.Size = new Size(142, 20);
+            label2.TabIndex = 5;
+            label2.Text = "Start Time : 00:00:00";
+            label2.Click += Label_StartTime;
             // 
             // Form1
             // 
@@ -131,6 +143,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
             ClientSize = new Size(594, 384);
+            Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(button3);
             Controls.Add(button2);
@@ -155,5 +168,6 @@
         private Label labelPlaybackTime;
         private Panel panelPlaybackBar;
         private Label label1;
+        private Label label2;
     }
 }

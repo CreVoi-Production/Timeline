@@ -44,6 +44,42 @@ namespace Timeline
             panel1.MouseUp += TimelinePanel_MouseUp;
         }
 
+        // タイムラインの開始時間を表示
+        private void DisplayFirstObjectStartTime()
+        {
+            // タイムライン上の全オブジェクトを取得
+            List<TimelineObject> timelineObjects = _timeline.GetObjects(); // このメソッドはタイムラインのオブジェクトリストを取得するものと仮定
+
+            // 最初のオブジェクトの開始時間を取得
+            TimeSpan firstStartTime = GetFirstObjectStartTime(timelineObjects);
+
+            // 開始時間をラベルに表示
+            label2.Text = $"Start Time: {firstStartTime.ToString(@"hh\:mm\:ss")}";
+        }
+
+        // タイムラインの開始時間を取得
+        private TimeSpan GetFirstObjectStartTime(List<TimelineObject> timelineObjects)
+        {
+            if (timelineObjects == null || timelineObjects.Count == 0)
+            {
+                return TimeSpan.Zero; // オブジェクトがない場合は0を返す
+            }
+
+            // 最初のオブジェクトの開始時間を取得
+            TimeSpan firstStartTime = timelineObjects[0].StartTime;
+
+            // 全オブジェクトの開始時間を確認し、最も早いものを選択
+            foreach (var obj in timelineObjects)
+            {
+                if (obj.StartTime < firstStartTime)
+                {
+                    firstStartTime = obj.StartTime;
+                }
+            }
+
+            return firstStartTime;
+        }
+
         // タイムラインの終了時間を表示
         private void UpdateEndTimeLabel(TimeSpan endTime)
         {
@@ -109,6 +145,9 @@ namespace Timeline
                     // タイムラインの終了時間を更新
                     UpdateTimelineEndTime();
 
+                    // タイムラインの開始時間を更新
+                    DisplayFirstObjectStartTime();
+
                     // タイムラインを再描画
                     panel1.Invalidate();
                 }
@@ -150,9 +189,21 @@ namespace Timeline
                 int deltaX = e.X - _dragStartPoint.X;
                 int deltaY = e.Y - _dragStartPoint.Y;
 
-                // 再生開始時間を更新
-                TimeSpan newStartTime = _selectedObject.StartTime + TimeSpan.FromMilliseconds(deltaX);
+                // 1ピクセルあたりの時間単位を設定（例: 1ミリ秒あたり1ピクセル）
+                double pixelsPerMillisecond = 1;
+
+                // 再生開始時間を更新（移動量に基づいて開始時間を変更）
+                TimeSpan newStartTime = _selectedObject.StartTime + TimeSpan.FromMilliseconds(deltaX * pixelsPerMillisecond);
                 if (newStartTime < TimeSpan.Zero) newStartTime = TimeSpan.Zero;  // 開始時間を0未満にしない
+
+                // 開始時間が負の値にならないように制限
+                if (newStartTime < TimeSpan.Zero) newStartTime = TimeSpan.Zero;
+
+                // オブジェクトの開始時間を更新
+                _selectedObject.StartTime = newStartTime;
+
+                // ドラッグ開始位置を更新
+                _dragStartPoint = e.Location;
 
                 // 新しいレイヤーを計算
                 int newLayer = _selectedObject.Layer + deltaY / 20;
@@ -161,6 +212,12 @@ namespace Timeline
                 // 更新した値を適用
                 _selectedObject.StartTime = newStartTime;
                 _selectedObject.Layer = newLayer;
+
+                // 最も早い開始時間を表示
+                DisplayFirstObjectStartTime();
+
+                // タイムラインの終了時間を更新
+                UpdateTimelineEndTime();
 
                 // タイムラインを再描画
                 panel1.Invalidate();
@@ -300,6 +357,9 @@ namespace Timeline
                 // タイムラインの長さを音声ファイルの長さに合わせて更新
                 UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
 
+                // 最も早い開始時間を表示
+                DisplayFirstObjectStartTime();
+
                 // タイムラインの終了時間を更新
                 UpdateTimelineEndTime();
 
@@ -364,6 +424,16 @@ namespace Timeline
         }
 
         private void Label_EndTime(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Label_PlaybackTime(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Label_StartTime(object sender, EventArgs e)
         {
 
         }
