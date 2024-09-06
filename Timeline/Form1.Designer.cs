@@ -42,6 +42,7 @@
             label1 = new Label();
             label2 = new Label();
             button4 = new Button();
+            button5 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
@@ -148,12 +149,23 @@
             button4.UseVisualStyleBackColor = true;
             button4.Click += Button_Reset;
             // 
+            // button5
+            // 
+            button5.Location = new Point(166, 324);
+            button5.Name = "button5";
+            button5.Size = new Size(134, 55);
+            button5.TabIndex = 7;
+            button5.Text = "Clean";
+            button5.UseVisualStyleBackColor = true;
+            button5.Click += Button_Clean;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
             ClientSize = new Size(745, 384);
+            Controls.Add(button5);
             Controls.Add(button4);
             Controls.Add(label2);
             Controls.Add(label1);
@@ -182,5 +194,6 @@
         private Label label1;
         private Label label2;
         private Button button4;
+        private Button button5;
     }
 }

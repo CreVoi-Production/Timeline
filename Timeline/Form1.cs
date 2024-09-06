@@ -444,6 +444,15 @@ namespace Timeline
             var currentTime = _audioPlayer.CurrentTime;
             labelPlaybackTime.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
         }
+
+        private void Button_Clean(object sender, EventArgs e)
+        {
+            _audioPlayer.Clean();
+            _timeline.GetObjects().Clear();
+            panel1.Invalidate();
+            DisplayFirstObjectStartTime();
+            UpdateTimelineEndTime();
+        }
     }
 
     public class Timeline
@@ -552,6 +561,24 @@ namespace Timeline
                 stream.Position = 0; // 再生位置を先頭に戻す
             }
         }
+
+        // すべてのオブジェクトを削除するメソッド
+        public void Clean()
+        {
+            // リソースを解放してからリストをクリアする
+            foreach (var player in _wavePlayers)
+            {
+                player.Dispose();
+            }
+            foreach (var stream in _waveStreams)
+            {
+                stream.Dispose();
+            }
+
+            _wavePlayers.Clear();
+            _waveStreams.Clear();
+        }
+
 
         public TimeSpan CurrentTime
         {
