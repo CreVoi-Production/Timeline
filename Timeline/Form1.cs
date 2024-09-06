@@ -20,6 +20,10 @@ namespace Timeline
         private bool _isDragging;
         private LayerLinesPanel _layerLinesPanel;
         private int numberOfLayers = 5; // レイヤー数の初期値
+        private int pixelsPerMillisecond = 1; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
+        private int layerHeight = 50; // 各レイヤーの高さ
+        private List<TimelineObject> timelineObjects = new List<TimelineObject>();
+
 
 
         public Form1()
@@ -72,9 +76,10 @@ namespace Timeline
 
             // タイムラインオブジェクトを描画
             var objects = _timeline.GetObjects();
+            int scrollOffset = hScrollBar1.Value;
             foreach (var obj in objects)
             {
-                DrawTimelineObject(g, obj);
+                DrawTimelineObject(g, obj, scrollOffset);
             }
 
             // レイヤー数を取得して線を描画
@@ -355,16 +360,17 @@ namespace Timeline
         private void TimelinePanel_Paint(object sender, PaintEventArgs e)
         {
             // タイムラインオブジェクトを描画する処理
+            int scrollOffset = hScrollBar1.Value;
             foreach (var obj in _timeline.GetObjects())
             {
-                DrawTimelineObject(e.Graphics, obj);
+                DrawTimelineObject(e.Graphics, obj, scrollOffset);
             }
 
             Graphics g = e.Graphics;
             DrawLayerLines(g, numberOfLayers);
         }
 
-        private void DrawTimelineObject(Graphics g, TimelineObject obj)
+        private void DrawTimelineObject(Graphics g, TimelineObject obj, int scrollOffset)
         {
             // オブジェクトの位置とサイズを計算して描画
             int pixelsPerMillisecond = 1; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
@@ -422,7 +428,7 @@ namespace Timeline
             }
 
             // ここでは、開始時間を0、レイヤーを0に設定
-            return new TimelineObject(TimeSpan.Zero, duration, 0);
+            return new TimelineObject(TimeSpan.Zero, duration, 0, filePath);
         }
 
         private void UpdateTrackBar(TimeSpan currentTime, TimeSpan totalTime)
@@ -497,6 +503,45 @@ namespace Timeline
             DisplayFirstObjectStartTime();
             UpdateTimelineEndTime();
         }
+
+        private void Button_Export(object sender, EventArgs e)
+        {
+
+        }
+
+        private void hScrollBar1_Scroll(object sender, ScrollEventArgs e)
+        {
+            // スクロール位置に基づいて描画位置を調整
+            Invalidate(); // フォームの再描画をトリガー
+        }
+
+        // フォームの初期化時にスクロールバーの設定
+        private void hScrollBar1_Load(object sender, EventArgs e)
+        {
+            // スクロールバーの設定
+            hScrollBar1.Minimum = 0;
+            hScrollBar1.Maximum = CalculateMaxScroll(); // タイムラインの最大幅に応じて設定
+            hScrollBar1.LargeChange = ClientSize.Width; // 表示領域の幅
+            hScrollBar1.SmallChange = 10; // スクロール時の小さな変化量
+            hScrollBar1.Value = 0; // 初期値
+        }
+
+        // タイムラインの最大スクロール幅を計算するメソッド
+        private int CalculateMaxScroll()
+        {
+            // タイムライン上の最も右側のオブジェクトの位置を計算
+            int maxRight = 0;
+            foreach (var obj in timelineObjects)
+            {
+                int right = (int)(obj.StartTime.TotalMilliseconds * pixelsPerMillisecond) +
+                            (int)(obj.Duration.TotalMilliseconds * pixelsPerMillisecond);
+                if (right > maxRight)
+                {
+                    maxRight = right;
+                }
+            }
+            return maxRight - ClientSize.Width; // スクロールの最大幅
+        }
     }
 
     public class Timeline
@@ -552,12 +597,14 @@ namespace Timeline
         public TimeSpan StartTime { get; set; }
         public TimeSpan Duration { get; set; }
         public int Layer { get; set; }
+        public string FilePath { get; set; }
 
-        public TimelineObject(TimeSpan startTime, TimeSpan duration, int layer)
+        public TimelineObject(TimeSpan startTime, TimeSpan duration, int layer, string filePath)
         {
             StartTime = startTime;
             Duration = duration;
             Layer = layer;
+            FilePath = filePath;
         }
     }
 

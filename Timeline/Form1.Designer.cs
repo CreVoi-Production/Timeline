@@ -43,6 +43,8 @@
             label2 = new Label();
             button4 = new Button();
             button5 = new Button();
+            button6 = new Button();
+            hScrollBar1 = new HScrollBar();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
@@ -51,14 +53,14 @@
             panel1.BackColor = SystemColors.Info;
             panel1.Location = new Point(26, 21);
             panel1.Name = "panel1";
-            panel1.Size = new Size(694, 185);
+            panel1.Size = new Size(829, 185);
             panel1.TabIndex = 0;
             panel1.Paint += TimelinePanel_Paint;
             // 
             // panelPlaybackBar
             // 
             panelPlaybackBar.BackColor = Color.Red;
-            panelPlaybackBar.Location = new Point(26, 261);
+            panelPlaybackBar.Location = new Point(26, 271);
             panelPlaybackBar.Name = "panelPlaybackBar";
             panelPlaybackBar.Size = new Size(100, 5);
             panelPlaybackBar.TabIndex = 1;
@@ -112,7 +114,7 @@
             // labelPlaybackTime
             // 
             labelPlaybackTime.AutoSize = true;
-            labelPlaybackTime.Location = new Point(26, 223);
+            labelPlaybackTime.Location = new Point(26, 233);
             labelPlaybackTime.Name = "labelPlaybackTime";
             labelPlaybackTime.Size = new Size(165, 20);
             labelPlaybackTime.TabIndex = 0;
@@ -122,7 +124,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(584, 246);
+            label1.Location = new Point(719, 256);
             label1.Name = "label1";
             label1.Size = new Size(136, 20);
             label1.TabIndex = 4;
@@ -132,7 +134,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(578, 223);
+            label2.Location = new Point(713, 233);
             label2.Name = "label2";
             label2.Size = new Size(142, 20);
             label2.TabIndex = 5;
@@ -159,12 +161,32 @@
             button5.UseVisualStyleBackColor = true;
             button5.Click += Button_Clean;
             // 
+            // button6
+            // 
+            button6.Location = new Point(726, 324);
+            button6.Name = "button6";
+            button6.Size = new Size(134, 55);
+            button6.TabIndex = 8;
+            button6.Text = "Export";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += Button_Export;
+            // 
+            // hScrollBar1
+            // 
+            hScrollBar1.Location = new Point(26, 206);
+            hScrollBar1.Name = "hScrollBar1";
+            hScrollBar1.Size = new Size(829, 17);
+            hScrollBar1.TabIndex = 9;
+            hScrollBar1.Scroll += hScrollBar1_Scroll;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(745, 384);
+            ClientSize = new Size(867, 384);
+            Controls.Add(hScrollBar1);
+            Controls.Add(button6);
             Controls.Add(button5);
             Controls.Add(button4);
             Controls.Add(label2);
@@ -195,5 +217,7 @@
         private Label label2;
         private Button button4;
         private Button button5;
+        private Button button6;
+        private HScrollBar hScrollBar1;
     }
 }
