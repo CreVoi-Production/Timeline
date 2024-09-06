@@ -18,6 +18,9 @@ namespace Timeline
         private TimelineObject _selectedObject;
         private Point _dragStartPoint;
         private bool _isDragging;
+        private LayerLinesPanel _layerLinesPanel;
+        private int numberOfLayers = 5; // レイヤー数の初期値
+
 
         public Form1()
         {
@@ -42,6 +45,44 @@ namespace Timeline
             panel1.MouseDown += TimelinePanel_MouseDown;
             panel1.MouseMove += TimelinePanel_MouseMove;
             panel1.MouseUp += TimelinePanel_MouseUp;
+        }
+
+        // レイヤー間への線の描画
+        private void DrawLayerLines(Graphics g, int numberOfLayers)
+        {
+            // レイヤーの高さ
+            int layerHeight = 50;
+
+            // 線の色とスタイルを設定
+            Pen pen = new Pen(Color.Gray, 1); // グレーの線、太さ1ピクセル
+
+            // 各レイヤー間に線を引く
+            for (int i = 1; i < numberOfLayers; i++)
+            {
+                int y = i * layerHeight;
+                g.DrawLine(pen, 0, y, this.Width, y); // この例では、Panelの幅全体に線を引きます
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            Graphics g = e.Graphics;
+
+            // タイムラインオブジェクトを描画
+            var objects = _timeline.GetObjects();
+            foreach (var obj in objects)
+            {
+                DrawTimelineObject(g, obj);
+            }
+
+            // レイヤー数を取得して線を描画
+            if (objects.Any())  // リストが空でないことを確認
+            {
+                int numberOfLayers = objects.Max(o => o.Layer) + 1;
+                DrawLayerLines(g, numberOfLayers);
+            }
         }
 
         // タイムラインの開始時間を表示
@@ -318,6 +359,9 @@ namespace Timeline
             {
                 DrawTimelineObject(e.Graphics, obj);
             }
+
+            Graphics g = e.Graphics;
+            DrawLayerLines(g, numberOfLayers);
         }
 
         private void DrawTimelineObject(Graphics g, TimelineObject obj)
@@ -597,6 +641,29 @@ namespace Timeline
                 if (_waveStreams.Count > 0)
                     return _waveStreams[0].TotalTime;
                 return TimeSpan.Zero;
+            }
+        }
+    }
+
+    public class LayerLinesPanel : Panel
+    {
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            DrawLayerLines(e.Graphics);
+        }
+
+        private void DrawLayerLines(Graphics graphics)
+        {
+            int numberOfLayers = 5; // 例: 5つのレイヤー
+            int panelHeight = this.Height;
+            int layerHeight = panelHeight / numberOfLayers;
+
+            Pen pen = new Pen(Color.Gray, 1); // 線の色と幅
+            for (int i = 1; i < numberOfLayers; i++)
+            {
+                int yPosition = i * layerHeight;
+                graphics.DrawLine(pen, 0, yPosition, this.Width, yPosition);
             }
         }
     }
