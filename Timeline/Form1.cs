@@ -24,8 +24,6 @@ namespace Timeline
         private int layerHeight = 50; // 各レイヤーの高さ
         private List<TimelineObject> timelineObjects = new List<TimelineObject>();
 
-
-
         public Form1()
         {
             InitializeComponent();
@@ -49,6 +47,13 @@ namespace Timeline
             panel1.MouseDown += TimelinePanel_MouseDown;
             panel1.MouseMove += TimelinePanel_MouseMove;
             panel1.MouseUp += TimelinePanel_MouseUp;
+
+            TimelineObject newObject = new TimelineObject(
+                TimeSpan.FromMilliseconds(5000), // StartTime
+                TimeSpan.FromMilliseconds(3000), // Duration
+                0, // Layer
+                "sample_audio.mp3" // FileName
+            );
         }
 
         // レイヤー間への線の描画
@@ -88,6 +93,25 @@ namespace Timeline
                 int numberOfLayers = objects.Max(o => o.Layer) + 1;
                 DrawLayerLines(g, numberOfLayers);
             }
+        }
+
+        private void DrawTimelineObject(Graphics g, TimelineObject obj, int scrollOffset)
+        {
+            // オブジェクトの位置とサイズを計算して描画
+            int pixelsPerMillisecond = 1; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
+            int layerHeight = 50; // 各レイヤーの高さ
+
+            int x = (int)(obj.StartTime.TotalMilliseconds * pixelsPerMillisecond) - scrollOffset;  // ミリ秒をピクセルに変換
+            int width = (int)(obj.Duration.TotalMilliseconds * pixelsPerMillisecond);  // ミリ秒をピクセルに変換
+            int y = obj.Layer * layerHeight;  // レイヤーごとにY座標を変える
+            int height = layerHeight - 10; // オブジェクトの高さを設定
+
+            // オブジェクトの四角形を描画
+            g.FillRectangle(Brushes.Blue, x, y, width, height);
+            g.DrawRectangle(Pens.Black, x, y, width, height);
+
+            // オブジェクト名（ファイル名）を描画
+            g.DrawString(obj.FileName, SystemFonts.DefaultFont, Brushes.White, x + 5, y + 5);
         }
 
         // タイムラインの開始時間を表示
@@ -370,25 +394,6 @@ namespace Timeline
             DrawLayerLines(g, numberOfLayers);
         }
 
-        private void DrawTimelineObject(Graphics g, TimelineObject obj, int scrollOffset)
-        {
-            // オブジェクトの位置とサイズを計算して描画
-            int pixelsPerMillisecond = 1; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
-            int layerHeight = 50; // 各レイヤーの高さ
-
-            int x = (int)(obj.StartTime.TotalMilliseconds * pixelsPerMillisecond);  // ミリ秒をピクセルに変換
-            int width = (int)(obj.Duration.TotalMilliseconds * pixelsPerMillisecond);  // ミリ秒をピクセルに変換
-            int y = obj.Layer * layerHeight;  // レイヤーごとにY座標を変える
-            int height = layerHeight - 10; // オブジェクトの高さを設定
-
-            // オブジェクトの四角形を描画
-            g.FillRectangle(Brushes.Blue, x, y, width, height);
-            g.DrawRectangle(Pens.Black, x, y, width, height);
-
-            // オブジェクト名や他の情報を描画したい場合
-            g.DrawString("Object", SystemFonts.DefaultFont, Brushes.White, x + 5, y + 5);
-        }
-
         private void Button_AddObject(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -418,17 +423,17 @@ namespace Timeline
             }
         }
 
-        private TimelineObject LoadAudioFile(string filePath)
+        private TimelineObject LoadAudioFile(string fileName)
         {
             // 音声ファイルの長さを取得
             TimeSpan duration;
-            using (var reader = new AudioFileReader(filePath))
+            using (var reader = new AudioFileReader(fileName))
             {
                 duration = reader.TotalTime;
             }
 
             // ここでは、開始時間を0、レイヤーを0に設定
-            return new TimelineObject(TimeSpan.Zero, duration, 0, filePath);
+            return new TimelineObject(TimeSpan.Zero, duration, 0, fileName);
         }
 
         private void UpdateTrackBar(TimeSpan currentTime, TimeSpan totalTime)
@@ -603,8 +608,16 @@ namespace Timeline
         public TimeSpan Duration { get; set; }
         public int Layer { get; set; }
         public string FilePath { get; set; }
+        // ファイル名のみを返すプロパティ
+        public string FileName
+        {
+            get
+            {
+                return Path.GetFileName(FilePath);
+            }
+        }
 
-        public TimelineObject(TimeSpan startTime, TimeSpan duration, int layer, string filePath)
+        public TimelineObject(TimeSpan startTime, TimeSpan duration, int layer,  string filePath)
         {
             StartTime = startTime;
             Duration = duration;
