@@ -511,8 +511,13 @@ namespace Timeline
 
         private void hScrollBar1_Scroll(object sender, ScrollEventArgs e)
         {
-            // スクロール位置に基づいて描画位置を調整
-            Invalidate(); // フォームの再描画をトリガー
+            // スクロールバーの値がMinimumとMaximumの範囲内であるかを確認
+            if (e.NewValue >= hScrollBar1.Minimum && e.NewValue <= hScrollBar1.Maximum)
+            {
+                hScrollBar1.Value = e.NewValue;
+                // スクロール位置に基づいてタイムラインを再描画
+                panel1.Invalidate(); // これでパネルの再描画がトリガーされます
+            }
         }
 
         // フォームの初期化時にスクロールバーの設定
