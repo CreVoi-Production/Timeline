@@ -22,8 +22,8 @@ namespace Timeline
         private Point _dragStartPoint; //　ドラッグの開始位置を保持する
         private bool _isDragging; //　ドラッグ操作状態を示す
         private int numberOfLayers = 100; // レイヤー数の初期値
-        private int pixelsPerMillisecond = 1; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
         private int layerHeight = 50; // 各レイヤーの高さ
+        private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
 
         //　初期化
         public Form1()
@@ -76,6 +76,9 @@ namespace Timeline
             int y = obj.Layer * layerHeight;  // レイヤーごとにY座標を変える
             int height = layerHeight - 10; // オブジェクトの高さを設定
 
+            // 描画座標をオブジェクトに設定
+            obj.DrawingPosition = new Point(x, y);
+
             // 選択されているかどうかに応じて色を変更
             Brush brush = obj.IsSelected ? Brushes.Red : Brushes.Blue;
 
@@ -104,6 +107,18 @@ namespace Timeline
             }
         }
 
+        //　時間をピクセル位置に変換する
+        private int TimeToPixel(TimeSpan time)
+        {
+            return (int)(time.TotalMilliseconds * pixelsPerMillisecond);
+        }
+
+        //　ピクセル位置を時間に変換する
+        private TimeSpan PixelToTime(int pixel)
+        {
+            return TimeSpan.FromMilliseconds(pixel / pixelsPerMillisecond);
+        }
+
         //　PaintEventArgs を使用してカスタム描画をする
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -124,6 +139,34 @@ namespace Timeline
             {
                 int numberOfLayers = objects.Max(o => o.Layer) + 1;
                 DrawLayerLines(g, numberOfLayers);
+            }
+
+            // 時間ラベルを描画する
+            DrawTimeLabels(g);
+        }
+
+        // タイムラインの時間ラベルを描画する　
+        private void DrawTimeLabels(Graphics graphics)
+        {
+            if (_timeline.TotalDuration == TimeSpan.Zero)
+                return;
+
+            // タイムラインの全体にわたる時間のラベルを描画
+            double PixelsPerMillisecond = pixelsPerMillisecond;
+            TimeSpan duration = _timeline.TotalDuration;
+            int numberOfLabels = (int)(duration.TotalMinutes) + 1; // 分単位でラベルを設定
+
+            Font font = new Font("Arial", 8);
+            Brush brush = Brushes.Black;
+
+            for (int i = 0; i <= numberOfLabels; i++)
+            {
+                TimeSpan labelTime = TimeSpan.FromMinutes(i * 1); // 1分単位のラベル
+                int xPosition = TimeToPixel(labelTime);
+
+                // ラベルテキストの描画
+                string timeLabel = labelTime.ToString(@"hh\:mm\:ss");
+                graphics.DrawString(timeLabel, font, brush, xPosition, 0);
             }
         }
 
@@ -178,21 +221,25 @@ namespace Timeline
         //　マウスクリックが行われた際に、オブジェクトを選択してドラッグ操作を開始する
         private void TimelinePanel_MouseDown(object sender, MouseEventArgs e)
         {
-            // クリックされた位置にオブジェクトがあるか確認
-            foreach (var obj in _timeline.GetObjects())
+            if (e.Button == MouseButtons.Left) // 左クリックでドラッグを開始
             {
-                Rectangle objRect = new Rectangle(
-                    (int)obj.StartTime.TotalMilliseconds,
-                    obj.Layer * 20,
-                    (int)obj.Duration.TotalMilliseconds,
-                    20);
-
-                if (objRect.Contains(e.Location))
+                // クリックされた位置にオブジェクトがあるか確認
+                foreach (var obj in _timeline.GetObjects())
                 {
-                    _selectedObject = obj;
-                    _dragStartPoint = e.Location;
-                    _isDragging = true;
-                    break;
+                    // `DrawingPosition` を利用してオブジェクトの矩形を計算
+                    Rectangle objRect = new Rectangle(
+                        obj.DrawingPosition.X,
+                        obj.DrawingPosition.Y,
+                        (int)(obj.Duration.TotalMilliseconds * pixelsPerMillisecond),
+                        layerHeight - 10);
+
+                    if (objRect.Contains(e.Location))
+                    {
+                        _selectedObject = obj;
+                        _dragStartPoint = e.Location;
+                        _isDragging = true;
+                        break;
+                    }
                 }
             }
         }
@@ -206,8 +253,15 @@ namespace Timeline
                 int deltaX = e.X - _dragStartPoint.X;
                 int deltaY = e.Y - _dragStartPoint.Y;
 
+                // スケーリングファクターを設定（例: 0.5）
+                double scaleFactor = 0.000000001;
+
                 // 1ピクセルあたりの時間単位を設定（例: 1ミリ秒あたり1ピクセル）
                 double pixelsPerMillisecond = 1;
+
+                // スケーリングファクターを適用
+                double scaledDeltaX = deltaX * scaleFactor;
+                double scaledDeltaY = deltaY * scaleFactor;
 
                 // 再生開始時間を更新（移動量に基づいて開始時間を変更）
                 TimeSpan newStartTime = _selectedObject.StartTime + TimeSpan.FromMilliseconds(deltaX * pixelsPerMillisecond);
@@ -230,14 +284,47 @@ namespace Timeline
                 _selectedObject.StartTime = newStartTime;
                 _selectedObject.Layer = newLayer;
 
+                // 描画座標を再計算して更新
+                _selectedObject.DrawingPosition = new Point(
+                    (int)(newStartTime.TotalMilliseconds * pixelsPerMillisecond) - hScrollBar1.Value,
+                    _selectedObject.Layer * layerHeight
+                );
+
                 // 最も早い開始時間を表示
                 DisplayFirstObjectStartTime();
 
                 // タイムラインの終了時間を更新
                 UpdateTimelineEndTime();
 
+                // 音声プレーヤーの開始位置を更新
+                UpdateAudioPlayerStartTime(_selectedObject);
+
                 // タイムラインを再描画
                 panel1.Invalidate();
+            }
+        }
+
+        //　TimelineObjectのStartTimeを更新し、waveStreamとwavePlayerを対応するStartTimeに基づいて更新する
+        private void UpdateAudioPlayerStartTime(TimelineObject obj)
+        {
+            // 1ミリ秒あたりのバイト数を設定（実際の実装に応じて調整）
+            const double BytesPerMillisecond = 44.1 * 2 * 2 / 1000; // 44.1kHz ステレオ 16ビット
+
+            // StartTime をミリ秒に変換
+            double startMilliseconds = obj.StartTime.TotalMilliseconds;
+
+            // waveStream の再生位置を設定
+            if (_audioPlayer.waveStream != null)
+            {
+                long newPosition = (long)(startMilliseconds * BytesPerMillisecond);
+                _audioPlayer.waveStream.Position = newPosition;
+            }
+
+            // wavePlayer の再生位置を設定
+            if (_audioPlayer != null && _audioPlayer.wavePlayer != null)
+            {
+                _audioPlayer.wavePlayer.Stop(); 
+                _audioPlayer.wavePlayer.Play();
             }
         }
 
@@ -257,6 +344,7 @@ namespace Timeline
                 _selectedObject.Layer = newLayer;
 
                 _selectedObject = null;
+               
                 panel1.Invalidate();
             }
         }
@@ -610,6 +698,23 @@ namespace Timeline
             {
                 return _objects;
             }
+
+            //　タイムライン全体の長さを取得する
+            public TimeSpan TotalDuration
+            {
+                get
+                {
+                    if (_objects.Count == 0)
+                    {
+                        return TimeSpan.Zero;
+                    }
+
+                    var firstStart = _objects.Min(o => o.StartTime);
+                    var lastEnd = _objects.Max(o => o.StartTime + o.Duration);
+
+                    return lastEnd - firstStart;
+                }
+            }
         }
 
         // オブジェクトのプロパティを保持する
@@ -622,6 +727,7 @@ namespace Timeline
             public string FilePath { get; set; }
             public WaveStream WaveStream { get; set; }
             public bool IsSelected { get; set; } // 選択状態
+            public Point DrawingPosition { get; set; }　// 描画座標を保持する
 
             public string FileName => Path.GetFileName(FilePath);
 
@@ -641,6 +747,9 @@ namespace Timeline
         {
             private List<IWavePlayer> _wavePlayers;
             private List<WaveStream> _waveStreams;
+
+            public WaveStream waveStream { get; set; }
+            public WaveOut wavePlayer { get; set; }
 
             // 初期化
             public AudioPlayer()

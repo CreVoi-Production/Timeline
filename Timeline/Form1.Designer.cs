@@ -51,7 +51,7 @@
             // panel1
             // 
             panel1.BackColor = SystemColors.Desktop;
-            panel1.Location = new Point(26, 21);
+            panel1.Location = new Point(26, 29);
             panel1.Name = "panel1";
             panel1.Size = new Size(834, 185);
             panel1.TabIndex = 0;
@@ -60,10 +60,10 @@
             // panel2
             // 
             panel2.BackColor = Color.Red;
-            panel2.Location = new Point(26, 239);
-            panel2.Name = "panelPlaybackBar";
+            panel2.Location = new Point(26, 242);
+            panel2.Name = "panel2";
             panel2.Size = new Size(100, 5);
-            panel2  .TabIndex = 1;
+            panel2.TabIndex = 1;
             panel2.Paint += PlaybackBar_panel2;
             // 
             // button1
@@ -115,7 +115,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(26, 256);
+            label3.Location = new Point(26, 259);
             label3.Name = "label3";
             label3.Size = new Size(165, 20);
             label3.TabIndex = 0;
@@ -125,7 +125,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(26, 301);
+            label1.Location = new Point(26, 304);
             label1.Name = "label1";
             label1.Size = new Size(136, 20);
             label1.TabIndex = 4;
@@ -135,7 +135,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(26, 279);
+            label2.Location = new Point(26, 282);
             label2.Name = "label2";
             label2.Size = new Size(142, 20);
             label2.TabIndex = 5;
@@ -164,7 +164,7 @@
             // 
             // hScrollBar1
             // 
-            hScrollBar1.Location = new Point(26, 206);
+            hScrollBar1.Location = new Point(26, 217);
             hScrollBar1.Name = "hScrollBar1";
             hScrollBar1.Size = new Size(834, 17);
             hScrollBar1.TabIndex = 9;
@@ -185,7 +185,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(888, 384);
+            ClientSize = new Size(881, 384);
             Controls.Add(hScrollBar1);
             Controls.Add(button6);
             Controls.Add(button5);
