@@ -32,48 +32,49 @@
         private void InitializeComponent()
         {
             panel1 = new Panel();
-            panelPlaybackBar = new Panel();
+            panel2 = new Panel();
             button1 = new Button();
             trackBarTime = new TrackBar();
             labelTime = new Label();
             button2 = new Button();
             button3 = new Button();
-            labelPlaybackTime = new Label();
+            label3 = new Label();
             label1 = new Label();
             label2 = new Label();
             button4 = new Button();
             button5 = new Button();
-            button6 = new Button();
             hScrollBar1 = new HScrollBar();
+            button6 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
             // panel1
             // 
-            panel1.BackColor = SystemColors.Info;
+            panel1.BackColor = SystemColors.Desktop;
             panel1.Location = new Point(26, 21);
             panel1.Name = "panel1";
-            panel1.Size = new Size(829, 185);
+            panel1.Size = new Size(834, 185);
             panel1.TabIndex = 0;
-            panel1.Paint += TimelinePanel_Paint;
+            panel1.Paint += Timeline_panel1;
             // 
-            // panelPlaybackBar
+            // panel2
             // 
-            panelPlaybackBar.BackColor = Color.Red;
-            panelPlaybackBar.Location = new Point(26, 271);
-            panelPlaybackBar.Name = "panelPlaybackBar";
-            panelPlaybackBar.Size = new Size(100, 5);
-            panelPlaybackBar.TabIndex = 1;
+            panel2.BackColor = Color.Red;
+            panel2.Location = new Point(26, 239);
+            panel2.Name = "panelPlaybackBar";
+            panel2.Size = new Size(100, 5);
+            panel2  .TabIndex = 1;
+            panel2.Paint += PlaybackBar_panel2;
             // 
             // button1
             // 
-            button1.Location = new Point(26, 324);
+            button1.Location = new Point(26, 350);
             button1.Name = "button1";
-            button1.Size = new Size(134, 55);
+            button1.Size = new Size(104, 29);
             button1.TabIndex = 1;
             button1.Text = "Add";
             button1.UseVisualStyleBackColor = true;
-            button1.Click += Button_AddObject;
+            button1.Click += Add_button1;
             // 
             // trackBarTime
             // 
@@ -93,98 +94,98 @@
             // 
             // button2
             // 
-            button2.Location = new Point(306, 324);
+            button2.Location = new Point(426, 350);
             button2.Name = "button2";
-            button2.Size = new Size(134, 55);
+            button2.Size = new Size(104, 29);
             button2.TabIndex = 2;
             button2.Text = "Play";
             button2.UseVisualStyleBackColor = true;
-            button2.Click += Button_Play;
+            button2.Click += Play_button2;
             // 
             // button3
             // 
-            button3.Location = new Point(446, 324);
+            button3.Location = new Point(536, 350);
             button3.Name = "button3";
-            button3.Size = new Size(134, 55);
+            button3.Size = new Size(104, 29);
             button3.TabIndex = 3;
             button3.Text = "Stop";
             button3.UseVisualStyleBackColor = true;
-            button3.Click += Button_Stop;
+            button3.Click += Stop_button3;
             // 
-            // labelPlaybackTime
+            // label3
             // 
-            labelPlaybackTime.AutoSize = true;
-            labelPlaybackTime.Location = new Point(26, 233);
-            labelPlaybackTime.Name = "labelPlaybackTime";
-            labelPlaybackTime.Size = new Size(165, 20);
-            labelPlaybackTime.TabIndex = 0;
-            labelPlaybackTime.Text = "Playback Time: 00:00:00";
-            labelPlaybackTime.Click += Label_PlaybackTime;
+            label3.AutoSize = true;
+            label3.Location = new Point(26, 256);
+            label3.Name = "label3";
+            label3.Size = new Size(165, 20);
+            label3.TabIndex = 0;
+            label3.Text = "Playback Time: 00:00:00";
+            label3.Click += PlaybackTime_label3;
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(719, 256);
+            label1.Location = new Point(26, 301);
             label1.Name = "label1";
             label1.Size = new Size(136, 20);
             label1.TabIndex = 4;
             label1.Text = "End Time : 00:00:00";
-            label1.Click += Label_EndTime;
+            label1.Click += EndTime_label1;
             // 
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(713, 233);
+            label2.Location = new Point(26, 279);
             label2.Name = "label2";
             label2.Size = new Size(142, 20);
             label2.TabIndex = 5;
             label2.Text = "Start Time : 00:00:00";
-            label2.Click += Label_StartTime;
+            label2.Click += StartTime_label2;
             // 
             // button4
             // 
-            button4.Location = new Point(586, 324);
+            button4.Location = new Point(646, 350);
             button4.Name = "button4";
-            button4.Size = new Size(134, 55);
+            button4.Size = new Size(104, 29);
             button4.TabIndex = 6;
             button4.Text = "Reset";
             button4.UseVisualStyleBackColor = true;
-            button4.Click += Button_Reset;
+            button4.Click += Reset_button4;
             // 
             // button5
             // 
-            button5.Location = new Point(166, 324);
+            button5.Location = new Point(136, 350);
             button5.Name = "button5";
-            button5.Size = new Size(134, 55);
+            button5.Size = new Size(104, 29);
             button5.TabIndex = 7;
             button5.Text = "Clean";
             button5.UseVisualStyleBackColor = true;
-            button5.Click += Button_Clean;
-            // 
-            // button6
-            // 
-            button6.Location = new Point(726, 324);
-            button6.Name = "button6";
-            button6.Size = new Size(134, 55);
-            button6.TabIndex = 8;
-            button6.Text = "Export";
-            button6.UseVisualStyleBackColor = true;
-            button6.Click += Button_Export;
+            button5.Click += Clean_button5;
             // 
             // hScrollBar1
             // 
             hScrollBar1.Location = new Point(26, 206);
             hScrollBar1.Name = "hScrollBar1";
-            hScrollBar1.Size = new Size(829, 17);
+            hScrollBar1.Size = new Size(834, 17);
             hScrollBar1.TabIndex = 9;
-            hScrollBar1.Scroll += hScrollBar1_Scroll;
+            hScrollBar1.Scroll += Timeline_hScrollBar1;
+            // 
+            // button6
+            // 
+            button6.Location = new Point(756, 350);
+            button6.Name = "button6";
+            button6.Size = new Size(104, 29);
+            button6.TabIndex = 8;
+            button6.Text = "Export";
+            button6.UseVisualStyleBackColor = true;
+            button6.Click += Export_button6;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(867, 384);
+            ClientSize = new Size(888, 384);
             Controls.Add(hScrollBar1);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -195,11 +196,10 @@
             Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(panel1);
-            Controls.Add(labelPlaybackTime);
-            Controls.Add(panelPlaybackBar);
+            Controls.Add(label3);
+            Controls.Add(panel2);
             Name = "Form1";
             Text = "Timeline";
-            Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)trackBarTime).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -211,13 +211,13 @@
         private Button button1;
         private Button button2;
         private Button button3;
-        private Label labelPlaybackTime;
-        private Panel panelPlaybackBar;
+        private Label label3;
+        private Panel panel2;
         private Label label1;
         private Label label2;
         private Button button4;
         private Button button5;
-        private Button button6;
         private HScrollBar hScrollBar1;
+        private Button button6;
     }
 }
