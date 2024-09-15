@@ -45,6 +45,7 @@
             button5 = new Button();
             hScrollBar1 = new HScrollBar();
             button6 = new Button();
+            button7 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             SuspendLayout();
             // 
@@ -180,12 +181,23 @@
             button6.UseVisualStyleBackColor = true;
             button6.Click += Export_button6;
             // 
+            // button7
+            // 
+            button7.Location = new Point(136, 385);
+            button7.Name = "button7";
+            button7.Size = new Size(104, 29);
+            button7.TabIndex = 10;
+            button7.Text = "Delete";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += Delete_button7;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(881, 384);
+            ClientSize = new Size(881, 417);
+            Controls.Add(button7);
             Controls.Add(hScrollBar1);
             Controls.Add(button6);
             Controls.Add(button5);
@@ -219,5 +231,6 @@
         private Button button5;
         private HScrollBar hScrollBar1;
         private Button button6;
+        private Button button7;
     }
 }

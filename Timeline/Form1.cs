@@ -23,7 +23,7 @@ namespace Timeline
         private bool _isDragging; //　ドラッグ操作状態を示す
         private int numberOfLayers = 100; // レイヤー数の初期値
         private int layerHeight = 50; // 各レイヤーの高さ
-        private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）
+        private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）　
 
         //　初期化
         public Form1()
@@ -32,7 +32,7 @@ namespace Timeline
 
             _timeline = new Timeline();
             _audioPlayer = new AudioPlayer();
-            
+
             _playbackTimer = new System.Windows.Forms.Timer();
             _playbackTimer.Interval = 100; // ミリ秒単位、ここでは100msごとに更新
             _playbackTimer.Tick += PlaybackTimer_Tick;
@@ -83,7 +83,7 @@ namespace Timeline
             Brush brush = obj.IsSelected ? Brushes.Red : Brushes.Blue;
 
             // オブジェクトの四角形を描画
-            g.FillRectangle(Brushes.Blue, x, y, width, height);
+            g.FillRectangle(brush, x, y, width, height);
             g.DrawRectangle(Pens.Black, x, y, width, height);
 
             // オブジェクト名（ファイル名）を描画
@@ -190,13 +190,12 @@ namespace Timeline
             foreach (var filePath in filePaths)
             {
                 // 音声ファイルのロード
-                _audioPlayer.Load(filePath);
+                TimelineObject timelineObject = _audioPlayer.Load(filePath);
 
                 // 音声ファイルが正しくロードされているか確認
                 if (_audioPlayer.TotalTime != TimeSpan.Zero)
                 {
                     // タイムラインオブジェクトとして追加
-                    var timelineObject = LoadAudioFile(filePath);
                     _timeline.AddObject(timelineObject);
 
                     // タイムラインの長さを音声ファイルの長さに合わせて更新
@@ -223,6 +222,12 @@ namespace Timeline
         {
             if (e.Button == MouseButtons.Left) // 左クリックでドラッグを開始
             {
+                // 全てのオブジェクトの選択状態をクリア
+                foreach (var obj in _timeline.GetObjects())
+                {
+                    obj.IsSelected = false; // 選択解除
+                }
+
                 // クリックされた位置にオブジェクトがあるか確認
                 foreach (var obj in _timeline.GetObjects())
                 {
@@ -235,12 +240,15 @@ namespace Timeline
 
                     if (objRect.Contains(e.Location))
                     {
+                        obj.IsSelected = true;
                         _selectedObject = obj;
                         _dragStartPoint = e.Location;
                         _isDragging = true;
                         break;
                     }
                 }
+
+                panel1.Invalidate();
             }
         }
 
@@ -253,10 +261,10 @@ namespace Timeline
                 int deltaX = e.X - _dragStartPoint.X;
                 int deltaY = e.Y - _dragStartPoint.Y;
 
-                // スケーリングファクターを設定（例: 0.5）
-                double scaleFactor = 0.000000001;
+                // スケーリングファクターを設定
+                double scaleFactor = 1;
 
-                // 1ピクセルあたりの時間単位を設定（例: 1ミリ秒あたり1ピクセル）
+                // 1ピクセルあたりの時間単位を設定 (1ミリ秒あたり1ピクセル）
                 double pixelsPerMillisecond = 1;
 
                 // スケーリングファクターを適用
@@ -323,7 +331,7 @@ namespace Timeline
             // wavePlayer の再生位置を設定
             if (_audioPlayer != null && _audioPlayer.wavePlayer != null)
             {
-                _audioPlayer.wavePlayer.Stop(); 
+                _audioPlayer.wavePlayer.Stop();
                 _audioPlayer.wavePlayer.Play();
             }
         }
@@ -344,7 +352,7 @@ namespace Timeline
                 _selectedObject.Layer = newLayer;
 
                 _selectedObject = null;
-               
+
                 panel1.Invalidate();
             }
         }
@@ -380,10 +388,9 @@ namespace Timeline
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                _audioPlayer.Load(filePath);
+                TimelineObject timelineObject = _audioPlayer.Load(filePath);
 
                 // タイムラインオブジェクトとして追加
-                var timelineObject = LoadAudioFile(filePath);
                 _timeline.AddObject(timelineObject);
 
                 // タイムラインの長さを音声ファイルの長さに合わせて更新
@@ -398,21 +405,6 @@ namespace Timeline
                 // タイムラインを再描画
                 panel1.Invalidate();
             }
-
-        }
-
-        //　オブジェクトを初期化する
-        private TimelineObject LoadAudioFile(string fileName)
-        {
-            // 音声ファイルの長さを取得
-            TimeSpan duration;
-            using (var reader = new AudioFileReader(fileName))
-            {
-                duration = reader.TotalTime;
-            }
-
-            // ここでは、開始時間を0、レイヤーを0に設定
-            return new TimelineObject(TimeSpan.Zero, duration, 0, fileName);
         }
 
         //　Cleanボタンを描画する
@@ -423,6 +415,36 @@ namespace Timeline
             panel1.Invalidate();
             DisplayFirstObjectStartTime();
             UpdateTimelineEndTime();
+        }
+
+        //　Deleteボタンを描画する
+        private void Delete_button7(object sender, EventArgs e)
+        {
+            // 選択されているオブジェクトを探す
+            var selectedObjects = _timeline.GetSelectedObjects();
+
+            if (selectedObjects.Count > 0)
+            {
+                // Timelineリストから選択されたオブジェクトを削除
+                foreach (var obj in selectedObjects)
+                {
+                    _timeline.RemoveObject(obj);
+                }
+
+                // WaveStreamリストから該当するオブジェクトを削除
+                _audioPlayer.Delete(selectedObjects);
+
+                // 選択状態を解除
+                _selectedObject = null; 
+
+                // タイムラインを再描画
+                panel1.Invalidate();
+            }
+            else
+            {
+                // 選択されているオブジェクトがない場合
+                MessageBox.Show("削除するオブジェクトが選択されていません。");
+            }
         }
 
         //　Playボタンを描画する
@@ -450,6 +472,9 @@ namespace Timeline
         private void Reset_button4(object sender, EventArgs e)
         {
             _audioPlayer.Reset();
+            _isPlaying = false;
+            _audioPlayer.Stop();
+            _playbackTimer.Stop();
             var currentTime = _audioPlayer.CurrentTime;
             label3.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
         }
@@ -715,6 +740,12 @@ namespace Timeline
                     return lastEnd - firstStart;
                 }
             }
+
+            // IsSelected = trueのオブジェクトを取得する
+            public List<TimelineObject> GetSelectedObjects()
+            {
+                return _objects.Where(o => o.IsSelected).ToList();
+            }
         }
 
         // オブジェクトのプロパティを保持する
@@ -725,7 +756,6 @@ namespace Timeline
             public TimeSpan EndTime => StartTime + Duration;
             public int Layer { get; set; }
             public string FilePath { get; set; }
-            public WaveStream WaveStream { get; set; }
             public bool IsSelected { get; set; } // 選択状態
             public Point DrawingPosition { get; set; }　// 描画座標を保持する
 
@@ -745,21 +775,29 @@ namespace Timeline
         // 再生関連の機能を提供
         public class AudioPlayer
         {
+            private Timeline _timeline;
+
             private List<IWavePlayer> _wavePlayers;
             private List<WaveStream> _waveStreams;
+            private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
+            private Dictionary<string, WaveStream> _filePathWaveStreamMap;
 
             public WaveStream waveStream { get; set; }
-            public WaveOut wavePlayer { get; set; }
+            public IWavePlayer wavePlayer { get; set; }
 
             // 初期化
             public AudioPlayer()
             {
+                _timeline = new Timeline();
+
                 _wavePlayers = new List<IWavePlayer>();
                 _waveStreams = new List<WaveStream>();
+                _filePathWaveStreamMap = new Dictionary<string, WaveStream>();
+                _waveStreamPlayerMap = new Dictionary<WaveStream, IWavePlayer>();
             }
 
             //　指定されたファイルパスからオーディオファイルを読み込む
-            public void Load(string filePath)
+            public TimelineObject Load(string filePath)
             {
                 var wavePlayer = new WaveOutEvent();
                 var waveStream = new AudioFileReader(filePath);
@@ -767,6 +805,8 @@ namespace Timeline
                 wavePlayer.Init(waveStream);
                 _wavePlayers.Add(wavePlayer);
                 _waveStreams.Add(waveStream);
+                _filePathWaveStreamMap[filePath] = waveStream;
+                _waveStreamPlayerMap[waveStream] = wavePlayer;
 
                 // Durationは、waveStreamから取得する
                 TimeSpan duration = waveStream.TotalTime;
@@ -779,9 +819,9 @@ namespace Timeline
                     filePath: filePath
                 )
                 {
-                    WaveStream = waveStream,
                     IsSelected = false // 初期状態では選択されていないものとする
                 };
+                return TimelineObject;
             }
 
             // すべてのオーディオプレイヤーで再生する
@@ -828,8 +868,32 @@ namespace Timeline
                 _waveStreams.Clear();
             }
 
-            // 現在の再生位置を取得する
-            public TimeSpan CurrentTime
+            // 選択されたオブジェクトに関連する WaveStream を削除する
+            public void Delete(List<TimelineObject> selectedObjects)
+            {
+                foreach (var obj in selectedObjects)
+                {
+                    // TimelineObject に紐付けられているファイルパスから WaveStream を取得
+                    var filePath = obj.FilePath;
+
+                    // ファイルパスに基づいて WaveStream をリストから検索
+                    _filePathWaveStreamMap.TryGetValue(filePath, out var waveStream);
+                    _waveStreamPlayerMap.TryGetValue(waveStream, out var wavePlayer);
+
+                    wavePlayer.Stop(); // 再生を停止
+                    wavePlayer.Dispose(); // WavePlayer を解放
+                    _wavePlayers.Remove(wavePlayer); // _wavePlayers リストから削除
+                    _waveStreamPlayerMap.Remove(waveStream); // マップから削除
+
+                     // WaveStream を解放し、リストから削除
+                    waveStream.Dispose();
+                    _waveStreams.Remove(waveStream); // _waveStreams リストから削除
+                    _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
+                }
+            }
+
+        // 現在の再生位置を取得する
+        public TimeSpan CurrentTime
             {
                 get
                 {
