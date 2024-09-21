@@ -5,6 +5,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Collections.Generic;
 using System.IO;
 using NAudio.Wave;
+using NAudio.Lame;
 using System.Text;
 using static Timeline.Form1;
 
@@ -751,7 +752,8 @@ namespace Timeline
         // オブジェクトのプロパティを保持する
         public class TimelineObject
         {
-            public TimeSpan StartTime { get; set; }
+            private TimeSpan _startTime;
+            private WaveOffsetStream _waveOffsetStream; // WaveOffsetStreamを使用する
             public TimeSpan Duration { get; set; }
             public TimeSpan EndTime => StartTime + Duration;
             public int Layer { get; set; }
@@ -762,13 +764,29 @@ namespace Timeline
             public string FileName => Path.GetFileName(FilePath);
 
             //　初期化
-            public TimelineObject(TimeSpan startTime, TimeSpan duration, int layer, string filePath)
+            public TimelineObject(TimeSpan startTime, WaveOffsetStream waveOffsetStream, TimeSpan duration, int layer, string filePath)
             {
-                StartTime = startTime;
+                _startTime = startTime;
+                _waveOffsetStream = waveOffsetStream;
                 Duration = duration;
                 Layer = layer;
                 FilePath = filePath;
                 IsSelected = false; // 初期状態では選択されていない
+            }
+
+            // StartTimeプロパティ
+            public TimeSpan StartTime
+            {
+                get => _startTime;
+                set
+                {
+                    _startTime = value;
+                    if (_waveOffsetStream != null)
+                    {
+                        // StartTimeの変更をWaveOffsetStreamに反映
+                        _waveOffsetStream.StartTime = _startTime;
+                    }
+                }
             }
         }
 
@@ -779,8 +797,10 @@ namespace Timeline
 
             private List<IWavePlayer> _wavePlayers;
             private List<WaveStream> _waveStreams;
+            private List<WaveOffsetStream> _waveOffsetStreams;
             private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
             private Dictionary<string, WaveStream> _filePathWaveStreamMap;
+            private Dictionary<string, WaveOffsetStream> _filePathWaveOffsetStreamMap;
 
             public WaveStream waveStream { get; set; }
             public IWavePlayer wavePlayer { get; set; }
@@ -792,8 +812,10 @@ namespace Timeline
 
                 _wavePlayers = new List<IWavePlayer>();
                 _waveStreams = new List<WaveStream>();
+                _waveOffsetStreams = new List<WaveOffsetStream>();
                 _filePathWaveStreamMap = new Dictionary<string, WaveStream>();
                 _waveStreamPlayerMap = new Dictionary<WaveStream, IWavePlayer>();
+                _filePathWaveOffsetStreamMap = new Dictionary<string, WaveOffsetStream>();
             }
 
             //　指定されたファイルパスからオーディオファイルを読み込む
@@ -801,12 +823,21 @@ namespace Timeline
             {
                 var wavePlayer = new WaveOutEvent();
                 var waveStream = new AudioFileReader(filePath);
+                var audioFileReader = new AudioFileReader(filePath);
 
-                wavePlayer.Init(waveStream);
+                // PCM変換処理：MediaFoundationReaderで読み込み、PCMフォーマットに変換
+                var reader = new MediaFoundationReader(filePath);
+                var pcmStream = WaveFormatConversionStream.CreatePcmStream(reader);
+
+                // WaveOffsetStreamの作成（PCMに変換したWaveStreamを使用）
+                var waveOffsetStream = new WaveOffsetStream(pcmStream, TimeSpan.Zero, TimeSpan.Zero, pcmStream.TotalTime);
+
+                wavePlayer.Init(waveOffsetStream);
                 _wavePlayers.Add(wavePlayer);
-                _waveStreams.Add(waveStream);
+                _waveStreams.Add(waveOffsetStream);
                 _filePathWaveStreamMap[filePath] = waveStream;
                 _waveStreamPlayerMap[waveStream] = wavePlayer;
+                _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream;
 
                 // Durationは、waveStreamから取得する
                 TimeSpan duration = waveStream.TotalTime;
@@ -814,6 +845,7 @@ namespace Timeline
                 // TimelineObjectを作成して情報を格納
                 var TimelineObject = new TimelineObject(
                     startTime: CurrentTime,
+                    waveOffsetStream: waveOffsetStream,
                     duration: duration,
                     layer: 0,
                     filePath: filePath
