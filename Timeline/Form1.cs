@@ -7,6 +7,9 @@ using System.IO;
 using NAudio.Wave;
 using System.Text;
 using static Timeline.Form1;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace Timeline
 {
@@ -24,6 +27,9 @@ namespace Timeline
         private int numberOfLayers = 100; // レイヤー数の初期値
         private int layerHeight = 50; // 各レイヤーの高さ
         private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）　
+
+        private static readonly HttpClient client = new HttpClient();   // VOICEVOX クライアント
+        private const string VOICEVOXurl = "http://127.0.0.1:50021";    // VOICEVOX サーバーアドレス
 
         //　初期化
         public Form1()
@@ -435,7 +441,7 @@ namespace Timeline
                 _audioPlayer.Delete(selectedObjects);
 
                 // 選択状態を解除
-                _selectedObject = null; 
+                _selectedObject = null;
 
                 // タイムラインを再描画
                 panel1.Invalidate();
@@ -885,15 +891,15 @@ namespace Timeline
                     _wavePlayers.Remove(wavePlayer); // _wavePlayers リストから削除
                     _waveStreamPlayerMap.Remove(waveStream); // マップから削除
 
-                     // WaveStream を解放し、リストから削除
+                    // WaveStream を解放し、リストから削除
                     waveStream.Dispose();
                     _waveStreams.Remove(waveStream); // _waveStreams リストから削除
                     _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
                 }
             }
 
-        // 現在の再生位置を取得する
-        public TimeSpan CurrentTime
+            // 現在の再生位置を取得する
+            public TimeSpan CurrentTime
             {
                 get
                 {
@@ -912,6 +918,207 @@ namespace Timeline
                         return _waveStreams[0].TotalTime;
                     return TimeSpan.Zero;
                 }
+            }
+        }
+
+        private string filename;
+        private int fileindex;
+
+        private async void button8_Click(object sender, EventArgs e)  // 音声合成確定ボタンクリック
+        {
+            button8.Enabled = false;
+
+            if (!IsVoiceVoxRunning())
+            {
+                StartVoiceVox();
+                await WaitForVoiceVoxToStart();
+            }
+
+            filename = Convert.ToString(fileindex);
+            filename += "_" + textBox1.Text;
+
+            string text = textBox1.Text;
+            string speakerid = Getspeechsynthesischaracter(comboBox1.Text);    // 話者IDを取得
+            filename += "_" + comboBox1.Text;
+            string audioQuery = await GetAudioQuery(text, speakerid);
+            if (audioQuery != null)
+            {
+                await SynthesizeSpeech(audioQuery, speakerid);
+            }
+        }
+
+        // ここから VOICEVOX 用関数 
+        private bool IsVoiceVoxRunning()
+        {
+            var processes = Process.GetProcessesByName("run");
+            return processes.Length > 0;
+        }
+        private void StartVoiceVox()
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Programs\VOICEVOX\VOICEVOX.exe"
+            };
+            Process.Start(startInfo);
+        }
+        private async Task WaitForVoiceVoxToStart()
+        {
+            while (!IsVoiceVoxRunning())
+            {
+                await Task.Delay(1000);
+            }
+            await Task.Delay(2000);
+        }
+
+        private string Getspeechsynthesischaracter(string speakername)
+        {
+            Dictionary<string, string> speakerids = new Dictionary<string, string>()
+            {
+                {"四国めたん","2"},
+                {"ずんだもん","3"},
+                {"春日部つむぎ","8"},
+                {"雨晴はう","10"},
+                {"波音リツ","9"},
+                {"玄野武宏","11"},
+                {"白上虎太郎","12"},
+                {"青山龍星","13"},
+                {"冥鳴ひまり","14"},
+                {"九州そら","16"},
+                {"もち子さん","20"},
+                {"剣崎雌雄","21"},
+                {"WhiteCUL","23"},
+                {"後鬼","27"},
+                {"No.7","29"},
+                {"ちび式じい","42"},
+                {"櫻歌ミコ","43"},
+                {"小夜/SAYO","46"},
+                {"ナースロボ＿タイプＴ","47"},
+                {"†聖騎士 紅桜†","51"},
+                {"雀松朱司","52"},
+                {"麒ヶ島宗麟","53"},
+                {"春歌ナナ","54"},
+                {"猫使アル","55"},
+                {"猫使ビィ","58"},
+                {"中国うさぎ","61"},
+                {"栗田まろん","67"},
+                {"あいえるたん","68"},
+                {"満別花丸","69"},
+                {"琴詠ニア","74"}
+            };
+            return speakerids[speakername];
+        }
+
+        private async Task<string> GetAudioQuery(string text, string speakerid)
+        {
+            var response = await client.PostAsync($"{VOICEVOXurl}/audio_query?text={text}&speaker={speakerid}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var query = await response.Content.ReadAsStringAsync();
+
+                // JSONデータをオブジェクトに変換
+                dynamic queryJson = Newtonsoft.Json.JsonConvert.DeserializeObject(query);
+
+                // パラメータ設定
+                queryJson.speedScale = Convert.ToDouble(textBox2.Text);
+                queryJson.pitchScale = Convert.ToDouble(textBox3.Text);
+                queryJson.intonationScale = Convert.ToDouble(textBox4.Text);
+
+                // オブジェクトをJSONデータに再変換
+                return Newtonsoft.Json.JsonConvert.SerializeObject(queryJson);
+            }
+            return null;
+        }
+        private async Task SynthesizeSpeech(string audioQuery, string speakerid)
+        {
+            var content = new StringContent(audioQuery, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{VOICEVOXurl}/synthesis?speaker={speakerid}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                byte[] audioData = await response.Content.ReadAsByteArrayAsync();
+
+                // 音声データを保存
+                using (var fileStream = System.IO.File.Create(filename + ".wav"))
+                {
+                    using (var httpStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        httpStream.CopyTo(fileStream);
+                        fileStream.Flush();
+                    }
+                }
+            }
+
+            string filePath = filename + ".wav";
+            TimelineObject timelineObject = _audioPlayer.Load(filePath);
+            // タイムラインオブジェクトとして追加
+            _timeline.AddObject(timelineObject);
+            // タイムラインの長さを音声ファイルの長さに合わせて更新
+            UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
+            // 最も早い開始時間を表示
+            DisplayFirstObjectStartTime();
+            // タイムラインの終了時間を更新
+            UpdateTimelineEndTime();
+            // タイムラインを再描画
+            panel1.Invalidate();
+
+            fileindex++;
+            button8.Enabled = true;
+        }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            textBox2.Text = Convert.ToString(trackBar1.Value / 4f);   // 読み上げ速度
+        }
+
+        private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+            textBox3.Text = Convert.ToString(trackBar2.Value / 20f);  // 声の高さ
+        }
+
+        private void trackBar3_Scroll(object sender, EventArgs e)
+        {
+            textBox4.Text = Convert.ToString(trackBar3.Value * 0.2f); // 抑揚
+        }
+
+        // ここからボイスチェンジ
+        private bool recording = false;
+        WaveInEvent waveIn;
+        WaveFileWriter waveWriter;
+        private void button9_Click_1(object sender, EventArgs e)
+        {
+            if (!recording)
+            {
+                var deviceNumber = 0;
+
+                // 録画処理を開始
+                // WaveIn だと、「System.InvalidOperationException: 'Use WaveInEvent to record on a background thread'」のエラーが発生する
+                // waveIn = new WaveIn();
+                waveIn = new WaveInEvent();
+                waveIn.DeviceNumber = deviceNumber;
+                waveIn.WaveFormat = new WaveFormat(48000, WaveIn.GetCapabilities(deviceNumber).Channels);
+
+                waveWriter = new WaveFileWriter(".\\" + fileindex + "_record.wav", waveIn.WaveFormat);
+                fileindex++;
+
+                waveIn.DataAvailable += (_, ee) =>
+                {
+                    waveWriter.Write(ee.Buffer, 0, ee.BytesRecorded);
+                    waveWriter.Flush();
+                };
+
+                waveIn.StartRecording();
+                button9.Text = "録音停止";
+                recording = true;
+            }
+            else
+            {
+                waveIn?.StopRecording();
+                waveIn?.Dispose();
+                waveIn = null;
+
+                waveWriter?.Close();
+                waveWriter = null;
+                button9.Text = "録音";
+                recording = false;
             }
         }
     }
