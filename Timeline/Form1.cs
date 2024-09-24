@@ -1150,7 +1150,7 @@ namespace Timeline
 
                 // TimelineObject‚ğì¬‚µ‚Äî•ñ‚ğŠi”[
                 var TimelineObject = new TimelineObject(
-                    startTime: CurrentTime,
+                    startTime: TimeSpan.Zero,
                     waveOffsetStream: waveOffsetStream,
                     duration: duration,
                     layer: 0,
