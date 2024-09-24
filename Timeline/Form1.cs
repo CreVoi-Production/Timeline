@@ -519,7 +519,17 @@ namespace Timeline
         //　Exportボタンを描画する
         private void Export_button6(object sender, EventArgs e)
         {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "WAVファイル (*.wav)|*.wav"; // フィルタを設定
+                saveFileDialog.Title = "WAVファイルを保存";
+                saveFileDialog.DefaultExt = "wav"; // デフォルトの拡張子
 
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string outputFilePath = saveFileDialog.FileName;
+                }
+            }
         }
 
         // TTS関連　//
