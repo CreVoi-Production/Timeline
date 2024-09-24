@@ -8,6 +8,10 @@ using NAudio.Wave;
 using NAudio.Lame;
 using System.Text;
 using static Timeline.Form1;
+using System.Numerics;
+using System.Diagnostics;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
+using Newtonsoft.Json;
 
 namespace Timeline
 {
@@ -25,6 +29,9 @@ namespace Timeline
         private int numberOfLayers = 100; // レイヤー数の初期値
         private int layerHeight = 50; // 各レイヤーの高さ
         private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）　
+
+        private static readonly HttpClient client = new HttpClient();   // VOICEVOX クライアント
+        private const string VOICEVOXurl = "http://127.0.0.1:50021";    // VOICEVOX サーバーアドレス
 
         //　初期化
         public Form1()
@@ -389,28 +396,57 @@ namespace Timeline
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                TimelineObject timelineObject = _audioPlayer.Load(filePath);
 
-                // タイムラインオブジェクトとして追加
-                _timeline.AddObject(timelineObject);
-
-                // タイムラインの長さを音声ファイルの長さに合わせて更新
-                UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
-
-                // 最も早い開始時間を表示
-                DisplayFirstObjectStartTime();
-
-                // タイムラインの終了時間を更新
-                UpdateTimelineEndTime();
-
-                // タイムラインを再描画
-                panel1.Invalidate();
+                try
+                {
+                    // ファイルをタイムラインに追加
+                    AddToTimeline(filePath);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"ファイルの読み込みに失敗しました: {ex.Message}");
+                }
             }
         }
+
+        // ファイルをタイムラインに追加する共通メソッド
+        private void AddToTimeline(string filePath)
+        {
+            // ファイルパスのチェック
+            if (string.IsNullOrEmpty(filePath))
+            {
+                MessageBox.Show("無効なファイルパスです。");
+                return;
+            }
+
+            // タイムラインオブジェクトの作成と追加
+            TimelineObject timelineObject = _audioPlayer.Load(filePath);
+            _timeline.AddObject(timelineObject);
+
+            // タイムラインの長さを音声ファイルの長さに合わせて更新
+            UpdateTrackBar(TimeSpan.Zero, GetMaximumEndTime());
+
+            // 最も早い開始時間を表示
+            DisplayFirstObjectStartTime();
+
+            // タイムラインの終了時間を更新
+            UpdateTimelineEndTime();
+
+            // タイムラインを再描画
+            panel1.Invalidate();
+        }
+
 
         //　Cleanボタンを描画する
         private void Clean_button5(object sender, EventArgs e)
         {
+            _audioPlayer.Reset();
+            _isPlaying = false;
+            _audioPlayer.Stop();
+            _playbackTimer.Stop();
+            var currentTime = _audioPlayer.CurrentTime;
+            label3.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
+
             _audioPlayer.Clean();
             _timeline.GetObjects().Clear();
             panel1.Invalidate();
@@ -436,7 +472,7 @@ namespace Timeline
                 _audioPlayer.Delete(selectedObjects);
 
                 // 選択状態を解除
-                _selectedObject = null; 
+                _selectedObject = null;
 
                 // タイムラインを再描画
                 panel1.Invalidate();
@@ -482,6 +518,272 @@ namespace Timeline
 
         //　Exportボタンを描画する
         private void Export_button6(object sender, EventArgs e)
+        {
+
+        }
+
+        // TTS関連　//
+        private string filename;
+        private int fileindex;
+
+        // Synthesizeボタンを描画する
+        private async void Synthesize_button8(object sender, EventArgs e)
+        {
+            button8.Enabled = false;
+
+            if (!IsVoiceVoxRunning())
+            {
+                StartVoiceVox();
+                await WaitForVoiceVoxToStart();
+            }
+
+            filename = Convert.ToString(fileindex);
+            filename += "_" + textBox1.Text;
+
+            string text = textBox1.Text;
+            string speakerid = Getspeechsynthesischaracter(comboBox1.Text); // 話者IDを取得
+            filename += "_" + comboBox1.Text;
+            string audioQuery = await GetAudioQuery(text, speakerid);
+            if (audioQuery != null)
+            {
+                await SynthesizeSpeech(audioQuery, speakerid);
+            }
+
+            // 音声ファイルをタイムラインに追加
+            AddToTimeline(filename + ".wav");
+
+            fileindex++;
+            button8.Enabled = true;
+        }
+
+        // ここから VOICEVOX 用関数 
+        private bool IsVoiceVoxRunning()
+        {
+            var processes = Process.GetProcessesByName("run");
+            return processes.Length > 0;
+        }
+
+        private void StartVoiceVox()
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Programs\VOICEVOX\VOICEVOX.exe"
+            };
+            Process.Start(startInfo);
+        }
+
+        private async Task WaitForVoiceVoxToStart()
+        {
+            while (!IsVoiceVoxRunning())
+            {
+                await Task.Delay(1000);
+            }
+            await Task.Delay(2000);
+        }
+
+        private string Getspeechsynthesischaracter(string speakername)
+        {
+            Dictionary<string, string> speakerids = new Dictionary<string, string>()
+            {
+                {"四国めたん","2"},
+                {"ずんだもん","3"},
+                {"春日部つむぎ","8"},
+                {"雨晴はう","10"},
+                {"波音リツ","9"},
+                {"玄野武宏","11"},
+                {"白上虎太郎","12"},
+                {"青山龍星","13"},
+                {"冥鳴ひまり","14"},
+                {"九州そら","16"},
+                {"もち子さん","20"},
+                {"剣崎雌雄","21"},
+                {"WhiteCUL","23"},
+                {"後鬼","27"},
+                {"No.7","29"},
+                {"ちび式じい","42"},
+                {"櫻歌ミコ","43"},
+                {"小夜/SAYO","46"},
+                {"ナースロボ＿タイプＴ","47"},
+                {"†聖騎士 紅桜†","51"},
+                {"雀松朱司","52"},
+                {"麒ヶ島宗麟","53"},
+                {"春歌ナナ","54"},
+                {"猫使アル","55"},
+                {"猫使ビィ","58"},
+                {"中国うさぎ","61"},
+                {"栗田まろん","67"},
+                {"あいえるたん","68"},
+                {"満別花丸","69"},
+                {"琴詠ニア","74"}
+            };
+
+            // speakernameが空またはnullの場合のチェック
+            if (string.IsNullOrEmpty(speakername))
+            {
+                MessageBox.Show("話者名が選択されていません。");
+                return string.Empty; // またはデフォルトの話者IDを返す
+            }
+
+            // 話者名が辞書に存在するかを確認
+            if (speakerids.ContainsKey(speakername))
+            {
+                return speakerids[speakername];
+            }
+            else
+            {
+                MessageBox.Show("指定された話者名が見つかりません: " + speakername);
+                return string.Empty; // またはデフォルトの話者IDを返す
+            }
+        }
+
+        private async Task<string> GetAudioQuery(string text, string speakerid)
+        {
+            var response = await client.PostAsync($"{VOICEVOXurl}/audio_query?text={text}&speaker={speakerid}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var query = await response.Content.ReadAsStringAsync();
+
+                // JSONデータをオブジェクトに変換
+                dynamic queryJson = Newtonsoft.Json.JsonConvert.DeserializeObject(query);
+
+                // パラメータ設定
+                queryJson.speedScale = Convert.ToDouble(textBox2.Text);
+                queryJson.pitchScale = Convert.ToDouble(textBox3.Text);
+                queryJson.intonationScale = Convert.ToDouble(textBox4.Text);
+
+                // オブジェクトをJSONデータに再変換
+                return Newtonsoft.Json.JsonConvert.SerializeObject(queryJson);
+            }
+            return null;
+        }
+
+        // SynthesizeSpeech メソッドで音声ファイルを保存した後、AddToTimeline メソッドを呼び出す
+        private async Task SynthesizeSpeech(string audioQuery, string speakerid)
+        {
+            var content = new StringContent(audioQuery, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{VOICEVOXurl}/synthesis?speaker={speakerid}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                byte[] audioData = await response.Content.ReadAsByteArrayAsync();
+
+                // 音声データを保存
+                using (var fileStream = System.IO.File.Create(filename + ".wav"))
+                {
+                    using (var httpStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        httpStream.CopyTo(fileStream);
+                        fileStream.Flush();
+                    }
+                }
+            }
+        }
+
+        //　TextEntryボックスを描画する
+        private void TextEntry_textBox1(object sender, EventArgs e)
+        {
+
+        }
+
+        //　TextEntryボックスを描画する
+        private void TTSCharacter_comboBox1(object sender, EventArgs e)
+        {
+
+        }
+
+        //　ReadingSpeedボックスを描画する
+        private void ReadingSpeed_textBox2(object sender, EventArgs e)
+        {
+
+        }
+
+        //　ReadingSpeedバーを描画する
+        private void ReadingSpeed_trackBar1(object sender, EventArgs e)
+        {
+            textBox2.Text = Convert.ToString(trackBar1.Value / 4f);   // 読み上げ速度
+        }
+
+        //　VoiceHeightボックスを描画する
+        private void VoiceHeight_textBox3(object sender, EventArgs e)
+        {
+
+        }
+
+        //　VoiceHeightバーを描画する
+        private void VoiceHeight_trackBar2(object sender, EventArgs e)
+        {
+            textBox3.Text = Convert.ToString(trackBar2.Value / 20f);  // 声の高さ
+        }
+
+        //　Intonationボックスを描画する
+        private void textBox4_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        //　Intonationバーを描画する
+        private void Intonation_trackBar3(object sender, EventArgs e)
+        {
+            textBox4.Text = Convert.ToString(trackBar3.Value * 0.2f); // 抑揚
+        }
+
+        //　TTSグループボックスを描画する
+        private void TTS_groupBox1(object sender, EventArgs e)
+        {
+
+        }
+
+        // VC関連　//
+        private bool recording = false;
+        WaveInEvent waveIn;
+        WaveFileWriter waveWriter;
+
+        //　
+        private void Recording_button9(object sender, EventArgs e)
+        {
+            if (!recording)
+            {
+                var deviceNumber = 0;
+
+                // 録画処理を開始
+                // WaveIn だと、「System.InvalidOperationException: 'Use WaveInEvent to record on a background thread'」のエラーが発生する
+                // waveIn = new WaveIn();
+                waveIn = new WaveInEvent();
+                waveIn.DeviceNumber = deviceNumber;
+                waveIn.WaveFormat = new WaveFormat(48000, WaveIn.GetCapabilities(deviceNumber).Channels);
+
+                waveWriter = new WaveFileWriter(".\\" + fileindex + "_record.wav", waveIn.WaveFormat);
+                fileindex++;
+
+                waveIn.DataAvailable += (_, ee) =>
+                {
+                    waveWriter.Write(ee.Buffer, 0, ee.BytesRecorded);
+                    waveWriter.Flush();
+                };
+
+                waveIn.StartRecording();
+                button9.Text = "録音停止";
+                recording = true;
+            }
+            else
+            {
+                waveIn?.StopRecording();
+                waveIn?.Dispose();
+                waveIn = null;
+
+                waveWriter?.Close();
+                waveWriter = null;
+                button9.Text = "録音";
+                recording = false;
+            }
+        }
+
+        private void VSCharacter_comboBox2(object sender, EventArgs e)
+        {
+
+        }
+
+        //　VCグループボックスを描画する
+        private void VC_groupBox2(object sender, EventArgs e)
         {
 
         }
@@ -795,9 +1097,9 @@ namespace Timeline
         {
             private Timeline _timeline;
 
-            private List<IWavePlayer> _wavePlayers;
-            private List<WaveStream> _waveStreams;
-            private List<WaveOffsetStream> _waveOffsetStreams;
+            private List<CustomWavePlayer> _wavePlayers;
+            private List<CustomWaveStream> _waveStreams;
+            private List<CustomWaveOffsetStream> _waveOffsetStreams;
             private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
             private Dictionary<string, WaveStream> _filePathWaveStreamMap;
             private Dictionary<string, WaveOffsetStream> _filePathWaveOffsetStreamMap;
@@ -810,9 +1112,9 @@ namespace Timeline
             {
                 _timeline = new Timeline();
 
-                _wavePlayers = new List<IWavePlayer>();
-                _waveStreams = new List<WaveStream>();
-                _waveOffsetStreams = new List<WaveOffsetStream>();
+                _wavePlayers = new List<CustomWavePlayer>();
+                _waveStreams = new List<CustomWaveStream>();
+                _waveOffsetStreams = new List<CustomWaveOffsetStream>();
                 _filePathWaveStreamMap = new Dictionary<string, WaveStream>();
                 _waveStreamPlayerMap = new Dictionary<WaveStream, IWavePlayer>();
                 _filePathWaveOffsetStreamMap = new Dictionary<string, WaveOffsetStream>();
@@ -821,26 +1123,30 @@ namespace Timeline
             //　指定されたファイルパスからオーディオファイルを読み込む
             public TimelineObject Load(string filePath)
             {
-                var wavePlayer = new WaveOutEvent();
+
+                var wavePlayer = new CustomWavePlayer(); // 引数なしのコンストラクターを使用
                 var waveStream = new AudioFileReader(filePath);
-                var audioFileReader = new AudioFileReader(filePath);
 
                 // PCM変換処理：MediaFoundationReaderで読み込み、PCMフォーマットに変換
                 var reader = new MediaFoundationReader(filePath);
                 var pcmStream = WaveFormatConversionStream.CreatePcmStream(reader);
 
-                // WaveOffsetStreamの作成（PCMに変換したWaveStreamを使用）
-                var waveOffsetStream = new WaveOffsetStream(pcmStream, TimeSpan.Zero, TimeSpan.Zero, pcmStream.TotalTime);
+                // WaveOffsetStreamの作成
+                var waveOffsetStream = new CustomWaveOffsetStream(pcmStream, TimeSpan.Zero, TimeSpan.Zero, pcmStream.TotalTime);
 
-                wavePlayer.Init(waveOffsetStream);
+                wavePlayer.Init(waveOffsetStream); // CustomWavePlayerを初期化
                 _wavePlayers.Add(wavePlayer);
-                _waveStreams.Add(waveOffsetStream);
-                _filePathWaveStreamMap[filePath] = waveStream;
-                _waveStreamPlayerMap[waveStream] = wavePlayer;
+
+                // waveOffsetStream を CustomWaveStream に変換
+                var customWaveStream = new CustomWaveStream(waveOffsetStream); // ここを修正
+
+                _waveStreams.Add(customWaveStream);
+                _filePathWaveStreamMap[filePath] = customWaveStream; // waveStream をマップに追加
+                _waveStreamPlayerMap[customWaveStream] = wavePlayer;
                 _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream;
 
                 // Durationは、waveStreamから取得する
-                TimeSpan duration = waveStream.TotalTime;
+                TimeSpan duration = customWaveStream.TotalTime;
 
                 // TimelineObjectを作成して情報を格納
                 var TimelineObject = new TimelineObject(
@@ -855,6 +1161,7 @@ namespace Timeline
                 };
                 return TimelineObject;
             }
+
 
             // すべてのオーディオプレイヤーで再生する
             public void Play()
@@ -895,9 +1202,14 @@ namespace Timeline
                 {
                     stream.Dispose();
                 }
+                foreach (var offsetstream in _waveOffsetStreams)
+                {
+                    offsetstream.Dispose();
+                }
 
                 _wavePlayers.Clear();
                 _waveStreams.Clear();
+                _waveOffsetStreams.Clear();
             }
 
             // 選択されたオブジェクトに関連する WaveStream を削除する
@@ -909,23 +1221,27 @@ namespace Timeline
                     var filePath = obj.FilePath;
 
                     // ファイルパスに基づいて WaveStream をリストから検索
-                    _filePathWaveStreamMap.TryGetValue(filePath, out var waveStream);
-                    _waveStreamPlayerMap.TryGetValue(waveStream, out var wavePlayer);
+                    if (_filePathWaveStreamMap.TryGetValue(filePath, out var waveStream) && waveStream is CustomWaveStream customWaveStream)
+                    {
+                        // wavePlayer の取得
+                        if (_waveStreamPlayerMap.TryGetValue(waveStream, out var wavePlayer) && wavePlayer is CustomWavePlayer customWavePlayer)
+                        {
+                            customWavePlayer.Stop(); // 再生を停止
+                            customWavePlayer.Dispose(); // WavePlayer を解放
+                            _wavePlayers.Remove(customWavePlayer); // _wavePlayers リストから削除
+                            _waveStreamPlayerMap.Remove(waveStream); // マップから削除
 
-                    wavePlayer.Stop(); // 再生を停止
-                    wavePlayer.Dispose(); // WavePlayer を解放
-                    _wavePlayers.Remove(wavePlayer); // _wavePlayers リストから削除
-                    _waveStreamPlayerMap.Remove(waveStream); // マップから削除
-
-                     // WaveStream を解放し、リストから削除
-                    waveStream.Dispose();
-                    _waveStreams.Remove(waveStream); // _waveStreams リストから削除
-                    _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
+                            // WaveStream を解放し、リストから削除
+                            customWaveStream.Dispose();
+                            _waveStreams.Remove(customWaveStream); // _waveStreams リストから削除
+                            _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
+                        }
+                    }
                 }
             }
 
-        // 現在の再生位置を取得する
-        public TimeSpan CurrentTime
+            // 現在の再生位置を取得する
+            public TimeSpan CurrentTime
             {
                 get
                 {
@@ -944,6 +1260,167 @@ namespace Timeline
                         return _waveStreams[0].TotalTime;
                     return TimeSpan.Zero;
                 }
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+    }
+
+    //　WaveOffsetStream のラッパークラス
+    public class CustomWaveOffsetStream : WaveOffsetStream, IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public CustomWaveOffsetStream(WaveStream source, TimeSpan startTime, TimeSpan endTime, TimeSpan totalTime)
+            : base(source, startTime, endTime, totalTime)
+        {
+            IsDisposed = false;
+        }
+
+        public CustomWaveStream ToCustomWaveStream()
+        {
+            // WaveStream を CustomWaveStream に変換
+            return new CustomWaveStream(this); // このクラスが WaveStream を継承しているため、直接使用可能
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!IsDisposed)
+            {
+                if (disposing)
+                {
+                    // マネージリソースの解放
+                    base.Dispose(disposing);
+                }
+
+                // 非マネージリソースの解放があればここに記述
+
+                IsDisposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+    }
+
+    //　WaveStream のラッパークラス
+    public class CustomWaveStream : WaveStream
+    {
+        private readonly WaveStream _sourceStream;
+
+        public CustomWaveStream(WaveStream sourceStream)
+        {
+            _sourceStream = sourceStream ?? throw new ArgumentNullException(nameof(sourceStream));
+        }
+
+        public override long Length => _sourceStream.Length;
+
+        public override long Position
+        {
+            get => _sourceStream.Position;
+            set => _sourceStream.Position = value;
+        }
+
+        public override WaveFormat WaveFormat => _sourceStream.WaveFormat;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _sourceStream.Read(buffer, offset, count);
+        }
+
+        public override TimeSpan CurrentTime => TimeSpan.FromMilliseconds(Position * 1000.0 / WaveFormat.AverageBytesPerSecond);
+
+        // Disposeメソッドなど他の必要なメソッドも実装
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _sourceStream?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
+
+    //　IWavePlayer のラッパークラス
+    public class CustomWavePlayer : IWavePlayer, IDisposable
+    {
+        private readonly WaveOutEvent _waveOut;
+        public IWavePlayer Player { get; private set; }
+        public bool IsDisposed { get; private set; }
+
+        public event EventHandler<StoppedEventArgs> PlaybackStopped
+        {
+            add { _waveOut.PlaybackStopped += value; }
+            remove { _waveOut.PlaybackStopped -= value; }
+        }
+
+        public float Volume
+        {
+            get => _waveOut.Volume; // WaveOutEventのVolumeを返す
+            set => _waveOut.Volume = value; // WaveOutEventのVolumeを設定
+        }
+
+        // 引数なしのコンストラクタ
+        public CustomWavePlayer()
+        {
+            _waveOut = new WaveOutEvent();
+            IsDisposed = false;
+        }
+
+        // 引数ありのコンストラクタ
+        public CustomWavePlayer(IWavePlayer player)
+        {
+            Player = player;
+            _waveOut = new WaveOutEvent(); // WaveOutEventの初期化
+            IsDisposed = false;
+        }
+
+        public void Init(IWaveProvider waveProvider)
+        {
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(CustomWavePlayer)); // Disposeされている場合は例外をスロー
+
+            _waveOut.Init(waveProvider);
+        }
+
+        public void Play()
+        {
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(CustomWavePlayer)); // Disposeされている場合は例外をスロー
+
+            _waveOut.Play();
+        }
+
+        public void Pause()
+        {
+            _waveOut.Pause();
+        }
+
+        public void Stop()
+        {
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(CustomWavePlayer)); // Disposeされている場合は例外をスロー
+
+            _waveOut.Stop(); // WaveOutEventのStopメソッドを呼び出す
+        }
+
+        public PlaybackState PlaybackState => _waveOut.PlaybackState;
+
+        public WaveFormat OutputWaveFormat => _waveOut.OutputWaveFormat;
+
+        public void Dispose()
+        {
+            if (Player != null && !IsDisposed)
+            {
+                Player.Dispose();
+                IsDisposed = true;
             }
         }
     }

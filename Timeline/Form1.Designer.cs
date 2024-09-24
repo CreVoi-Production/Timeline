@@ -46,7 +46,31 @@
             hScrollBar1 = new HScrollBar();
             button6 = new Button();
             button7 = new Button();
+            button8 = new Button();
+            trackBar1 = new TrackBar();
+            trackBar2 = new TrackBar();
+            trackBar3 = new TrackBar();
+            label4 = new Label();
+            label5 = new Label();
+            label6 = new Label();
+            textBox1 = new TextBox();
+            label7 = new Label();
+            comboBox1 = new ComboBox();
+            label8 = new Label();
+            textBox2 = new TextBox();
+            textBox3 = new TextBox();
+            textBox4 = new TextBox();
+            groupBox1 = new GroupBox();
+            groupBox2 = new GroupBox();
+            button9 = new Button();
+            label9 = new Label();
+            comboBox2 = new ComboBox();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar3).BeginInit();
+            groupBox1.SuspendLayout();
+            groupBox2.SuspendLayout();
             SuspendLayout();
             // 
             // panel1
@@ -69,7 +93,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(26, 350);
+            button1.Location = new Point(26, 395);
             button1.Name = "button1";
             button1.Size = new Size(104, 29);
             button1.TabIndex = 1;
@@ -95,7 +119,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(426, 350);
+            button2.Location = new Point(426, 395);
             button2.Name = "button2";
             button2.Size = new Size(104, 29);
             button2.TabIndex = 2;
@@ -105,7 +129,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(536, 350);
+            button3.Location = new Point(536, 395);
             button3.Name = "button3";
             button3.Size = new Size(104, 29);
             button3.TabIndex = 3;
@@ -145,7 +169,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(646, 350);
+            button4.Location = new Point(646, 395);
             button4.Name = "button4";
             button4.Size = new Size(104, 29);
             button4.TabIndex = 6;
@@ -155,7 +179,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(136, 350);
+            button5.Location = new Point(136, 395);
             button5.Name = "button5";
             button5.Size = new Size(104, 29);
             button5.TabIndex = 7;
@@ -173,7 +197,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(756, 350);
+            button6.Location = new Point(756, 395);
             button6.Name = "button6";
             button6.Size = new Size(104, 29);
             button6.TabIndex = 8;
@@ -183,7 +207,7 @@
             // 
             // button7
             // 
-            button7.Location = new Point(136, 385);
+            button7.Location = new Point(136, 430);
             button7.Name = "button7";
             button7.Size = new Size(104, 29);
             button7.TabIndex = 10;
@@ -191,12 +215,213 @@
             button7.UseVisualStyleBackColor = true;
             button7.Click += Delete_button7;
             // 
+            // button8
+            // 
+            button8.Location = new Point(13, 290);
+            button8.Name = "button8";
+            button8.Size = new Size(312, 29);
+            button8.TabIndex = 11;
+            button8.Text = "Synthesize";
+            button8.UseVisualStyleBackColor = true;
+            button8.Click += Synthesize_button8;
+            // 
+            // trackBar1
+            // 
+            trackBar1.Location = new Point(131, 104);
+            trackBar1.Maximum = 8;
+            trackBar1.Minimum = 2;
+            trackBar1.Name = "trackBar1";
+            trackBar1.Size = new Size(194, 56);
+            trackBar1.TabIndex = 12;
+            trackBar1.Value = 4;
+            trackBar1.Scroll += ReadingSpeed_trackBar1;
+            // 
+            // trackBar2
+            // 
+            trackBar2.Location = new Point(131, 166);
+            trackBar2.Maximum = 3;
+            trackBar2.Minimum = -3;
+            trackBar2.Name = "trackBar2";
+            trackBar2.Size = new Size(194, 56);
+            trackBar2.TabIndex = 13;
+            trackBar2.Scroll += VoiceHeight_trackBar2;
+            // 
+            // trackBar3
+            // 
+            trackBar3.Location = new Point(131, 228);
+            trackBar3.Name = "trackBar3";
+            trackBar3.Size = new Size(194, 56);
+            trackBar3.TabIndex = 14;
+            trackBar3.Value = 5;
+            trackBar3.Scroll += Intonation_trackBar3;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(13, 104);
+            label4.Name = "label4";
+            label4.Size = new Size(106, 20);
+            label4.TabIndex = 15;
+            label4.Text = "ReadingSpeed";
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(13, 166);
+            label5.Name = "label5";
+            label5.Size = new Size(90, 20);
+            label5.TabIndex = 16;
+            label5.Text = "VoiceHeight";
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(13, 230);
+            label6.Name = "label6";
+            label6.Size = new Size(77, 20);
+            label6.TabIndex = 17;
+            label6.Text = "Intonation";
+            // 
+            // textBox1
+            // 
+            textBox1.Location = new Point(131, 20);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new Size(194, 27);
+            textBox1.TabIndex = 18;
+            textBox1.Text = "おはよう";
+            textBox1.TextChanged += TextEntry_textBox1;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new Point(13, 23);
+            label7.Name = "label7";
+            label7.Size = new Size(35, 20);
+            label7.TabIndex = 19;
+            label7.Text = "Text";
+            // 
+            // comboBox1
+            // 
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Items.AddRange(new object[] { "四国めたん", "ずんだもん", "春日部つむぎ", "雨晴はう", "波音リツ", "玄野武宏", "白上虎太郎", "青山龍星", "冥鳴ひまり", "九州そら", "もち子さん", "剣崎雌雄", "WhiteCUL", "後鬼", "No.7", "ちび式じい", "櫻歌ミコ", "小夜/SAYO", "ナースロボ＿タイプＴ", "†聖騎士 紅桜†", "雀松朱司", "麒ヶ島宗麟", "春歌ナナ", "猫使アル", "猫使ビィ", "中国うさぎ", "栗田まろん", "あいえるたん", "満別花丸", "琴詠ニア" });
+            comboBox1.Location = new Point(131, 63);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(194, 28);
+            comboBox1.TabIndex = 20;
+            comboBox1.Text = "四国めたん";
+            comboBox1.SelectedIndexChanged += TTSCharacter_comboBox1;
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Location = new Point(13, 66);
+            label8.Name = "label8";
+            label8.Size = new Size(72, 20);
+            label8.TabIndex = 21;
+            label8.Text = "Character";
+            // 
+            // textBox2
+            // 
+            textBox2.Location = new Point(13, 127);
+            textBox2.Name = "textBox2";
+            textBox2.Size = new Size(106, 27);
+            textBox2.TabIndex = 22;
+            textBox2.Text = "1";
+            textBox2.TextChanged += ReadingSpeed_textBox2;
+            // 
+            // textBox3
+            // 
+            textBox3.Location = new Point(13, 189);
+            textBox3.Name = "textBox3";
+            textBox3.Size = new Size(106, 27);
+            textBox3.TabIndex = 23;
+            textBox3.Text = "0";
+            textBox3.TextChanged += VoiceHeight_textBox3;
+            // 
+            // textBox4
+            // 
+            textBox4.Location = new Point(13, 250);
+            textBox4.Name = "textBox4";
+            textBox4.Size = new Size(106, 27);
+            textBox4.TabIndex = 24;
+            textBox4.Text = "1";
+            textBox4.TextChanged += textBox4_TextChanged;
+            // 
+            // groupBox1
+            // 
+            groupBox1.Controls.Add(comboBox1);
+            groupBox1.Controls.Add(textBox4);
+            groupBox1.Controls.Add(button8);
+            groupBox1.Controls.Add(textBox3);
+            groupBox1.Controls.Add(trackBar1);
+            groupBox1.Controls.Add(textBox2);
+            groupBox1.Controls.Add(trackBar2);
+            groupBox1.Controls.Add(label8);
+            groupBox1.Controls.Add(trackBar3);
+            groupBox1.Controls.Add(label4);
+            groupBox1.Controls.Add(label7);
+            groupBox1.Controls.Add(label5);
+            groupBox1.Controls.Add(textBox1);
+            groupBox1.Controls.Add(label6);
+            groupBox1.Location = new Point(875, 19);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(331, 329);
+            groupBox1.TabIndex = 25;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "TTS";
+            groupBox1.Enter += TTS_groupBox1;
+            // 
+            // groupBox2
+            // 
+            groupBox2.Controls.Add(button9);
+            groupBox2.Controls.Add(label9);
+            groupBox2.Controls.Add(comboBox2);
+            groupBox2.Location = new Point(875, 354);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new Size(331, 104);
+            groupBox2.TabIndex = 26;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "VC";
+            groupBox2.Enter += VC_groupBox2;
+            // 
+            // button9
+            // 
+            button9.Location = new Point(13, 65);
+            button9.Name = "button9";
+            button9.Size = new Size(312, 29);
+            button9.TabIndex = 25;
+            button9.Text = "Recording";
+            button9.UseVisualStyleBackColor = true;
+            button9.Click += Recording_button9;
+            // 
+            // label9
+            // 
+            label9.AutoSize = true;
+            label9.Location = new Point(18, 31);
+            label9.Name = "label9";
+            label9.Size = new Size(72, 20);
+            label9.TabIndex = 25;
+            label9.Text = "Character";
+            // 
+            // comboBox2
+            // 
+            comboBox2.FormattingEnabled = true;
+            comboBox2.Items.AddRange(new object[] { "あみたろ", "ずんだもん" });
+            comboBox2.Location = new Point(131, 26);
+            comboBox2.Name = "comboBox2";
+            comboBox2.Size = new Size(194, 28);
+            comboBox2.TabIndex = 25;
+            comboBox2.Text = "四国めたん";
+            comboBox2.SelectedIndexChanged += VSCharacter_comboBox2;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(881, 417);
+            ClientSize = new Size(1216, 470);
+            Controls.Add(groupBox2);
+            Controls.Add(groupBox1);
             Controls.Add(button7);
             Controls.Add(hScrollBar1);
             Controls.Add(button6);
@@ -211,8 +436,16 @@
             Controls.Add(label3);
             Controls.Add(panel2);
             Name = "Form1";
-            Text = "Timeline";
+            Text = "MiVoi";
+            Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)trackBarTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)trackBar3).EndInit();
+            groupBox1.ResumeLayout(false);
+            groupBox1.PerformLayout();
+            groupBox2.ResumeLayout(false);
+            groupBox2.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -232,5 +465,24 @@
         private HScrollBar hScrollBar1;
         private Button button6;
         private Button button7;
+        private Button button8;
+        private TrackBar trackBar1;
+        private TrackBar trackBar2;
+        private TrackBar trackBar3;
+        private Label label4;
+        private Label label5;
+        private Label label6;
+        private TextBox textBox1;
+        private Label label7;
+        private ComboBox comboBox1;
+        private Label label8;
+        private TextBox textBox2;
+        private TextBox textBox3;
+        private TextBox textBox4;
+        private GroupBox groupBox1;
+        private GroupBox groupBox2;
+        private Label label9;
+        private ComboBox comboBox2;
+        private Button button9;
     }
 }
