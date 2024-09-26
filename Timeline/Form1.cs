@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Diagnostics;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace Timeline
 {
@@ -29,6 +30,9 @@ namespace Timeline
         private int numberOfLayers = 100; // レイヤー数の初期値
         private int layerHeight = 50; // 各レイヤーの高さ
         private double pixelsPerMillisecond => (double)panel1.ClientSize.Width / _timeline.TotalDuration.TotalMilliseconds; // 1ミリ秒あたりのピクセル数（時間軸のスケール）　
+        private WaveInEvent waveIn;
+        private WaveFileWriter waveFileWriter;
+        private bool isRecording = false;
 
         private static readonly HttpClient client = new HttpClient();   // VOICEVOX クライアント
         private const string VOICEVOXurl = "http://127.0.0.1:50021";    // VOICEVOX サーバーアドレス
@@ -516,7 +520,7 @@ namespace Timeline
             label3.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
         }
 
-        //　Exportボタンを描画する
+        //　Exportボタンを描画する(録音式)
         private void Export_button6(object sender, EventArgs e)
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
@@ -528,8 +532,82 @@ namespace Timeline
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string outputFilePath = saveFileDialog.FileName;
+
+                    // 録音と再生の開始
+                    StartRecording(outputFilePath);
+                    _audioPlayer.Play();
                 }
             }
+        }
+
+        // 録音を開始する
+        private void StartRecording(string filePath)
+        {
+            waveIn = new WaveInEvent();
+            waveIn.DeviceNumber = 0; // デフォルトのマイク
+            waveIn.WaveFormat = new WaveFormat(8000, 8, 1); // 8.0kHz、8bit、モノラル
+
+            waveIn.DataAvailable += OnDataAvailable;
+            waveIn.RecordingStopped += OnRecordingStopped;
+
+            waveFileWriter = new WaveFileWriter(filePath, waveIn.WaveFormat);
+
+            _audioPlayer.Reset();
+            waveIn.StartRecording();
+            _playbackTimer.Start();
+            isRecording = true;
+
+            // 再生タイマーの設定
+            _playbackTimer = new System.Windows.Forms.Timer();
+            _playbackTimer.Interval = 100; // 100ミリ秒ごとに更新
+            _playbackTimer.Tick += OnPlaybackTick;
+            _playbackTimer.Start();
+        }
+
+        // 再生タイマーのTickイベント
+        private void OnPlaybackTick(object sender, EventArgs e)
+        {
+            var currentTime = _audioPlayer.CurrentTime;
+            var maxEndTime = GetMaximumEndTime();
+
+            // maxEndTimeに達したら停止
+            if (currentTime >= maxEndTime)
+            {
+                StopRecording();
+                StopPlayback();
+            }
+        }
+
+        // 録音を停止する
+        private void StopRecording()
+        {
+            if (isRecording)
+            {
+                waveIn.StopRecording();
+                isRecording = false;
+            }
+        }
+
+        // 録音データをファイルに書き込む
+        private void OnDataAvailable(object sender, WaveInEventArgs e)
+        {
+            if (waveFileWriter != null)
+            {
+                waveFileWriter.Write(e.Buffer, 0, e.BytesRecorded);
+            }
+        }
+
+        // 録音停止後の処理
+        private void OnRecordingStopped(object sender, StoppedEventArgs e)
+        {
+            waveFileWriter?.Dispose();
+            waveFileWriter = null;
+        }
+
+        //　Sendボタンを描画する
+        private void Send_button10(object sender, EventArgs e)
+        {
+            // filePath指定　→　xxd -i /filePath/　→　CR通信(キャラクター型)(前に0x00, 後ろに0xffを入れる)
         }
 
         // TTS関連　//
@@ -744,7 +822,6 @@ namespace Timeline
 
         // VC関連　//
         private bool recording = false;
-        WaveInEvent waveIn;
         WaveFileWriter waveWriter;
 
         //　

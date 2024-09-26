@@ -65,6 +65,7 @@
             button9 = new Button();
             label9 = new Label();
             comboBox2 = new ComboBox();
+            button10 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
@@ -414,12 +415,23 @@
             comboBox2.Text = "四国めたん";
             comboBox2.SelectedIndexChanged += VSCharacter_comboBox2;
             // 
+            // button10
+            // 
+            button10.Location = new Point(756, 429);
+            button10.Name = "button10";
+            button10.Size = new Size(104, 29);
+            button10.TabIndex = 27;
+            button10.Text = "Send";
+            button10.UseVisualStyleBackColor = true;
+            button10.Click += Send_button10;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
             ClientSize = new Size(1216, 470);
+            Controls.Add(button10);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(button7);
@@ -484,5 +496,6 @@
         private Label label9;
         private ComboBox comboBox2;
         private Button button9;
+        private Button button10;
     }
 }
