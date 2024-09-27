@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Ports;
 using NAudio.Wave;
 using NAudio.Lame;
 using System.Text;
@@ -13,6 +14,7 @@ using System.Diagnostics;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using NAudio.CoreAudioApi;
 
 namespace Timeline
 {
@@ -33,6 +35,8 @@ namespace Timeline
         private WaveInEvent waveIn;
         private WaveFileWriter waveFileWriter;
         private bool isRecording = false;
+        private SerialPort serialPort;
+        private string sendfilePath;
 
         private static readonly HttpClient client = new HttpClient();   // VOICEVOX クライアント
         private const string VOICEVOXurl = "http://127.0.0.1:50021";    // VOICEVOX サーバーアドレス
@@ -61,6 +65,49 @@ namespace Timeline
             panel1.MouseDown += TimelinePanel_MouseDown;
             panel1.MouseMove += TimelinePanel_MouseMove;
             panel1.MouseUp += TimelinePanel_MouseUp;
+
+            serialPort = new SerialPort();
+
+            // 利用可能なCOMポートを取得
+            string[] availablePorts = SerialPort.GetPortNames();
+
+            // 利用可能なポートを表示（デバッグや選択用）
+            foreach (string port in availablePorts)
+            {
+                MessageBox.Show("Available Port: " + port);
+            }
+
+            // 使用するポートをセット
+            if (availablePorts != null && availablePorts.Length > 0)
+            {
+                // ポート名を設定
+                serialPort.PortName = availablePorts[0]; // 最初のポートを使用
+            }
+            else
+            {
+                MessageBox.Show("利用可能なシリアルポートがありません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            try
+            {
+                serialPort.Open(); // シリアルポートを開く
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("他のプロセスがポートを使用している可能性があります: " + ex.Message);
+            }
+            catch (FileNotFoundException ex)
+            {
+                MessageBox.Show("指定したポートが存在しません: " + ex.Message);
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show("シリアルポートの入出力エラーが発生しました: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("予期しないエラーが発生しました: " + ex.Message);
+            }
         }
 
         //　Timelineを描画する
@@ -532,6 +579,7 @@ namespace Timeline
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string outputFilePath = saveFileDialog.FileName;
+                    sendfilePath = saveFileDialog.FileName;
 
                     // 録音と再生の開始
                     StartRecording(outputFilePath);
@@ -605,9 +653,72 @@ namespace Timeline
         }
 
         //　Sendボタンを描画する
-        private void Send_button10(object sender, EventArgs e)
+        private async void Send_button10(object sender, EventArgs e)
         {
             // filePath指定　→　xxd -i /filePath/　→　CR通信(キャラクター型)(前に0x00, 後ろに0xffを入れる)
+            if (!string.IsNullOrEmpty(sendfilePath))
+            {
+                try
+                {
+                    // WAVファイルのバイナリを読み込む
+                    byte[] fileBytes = await Task.Run(() => File.ReadAllBytes(sendfilePath));
+
+                    // 読み込んだバイナリデータの最初の512バイトを表示
+                    int displayLength = Math.Min(fileBytes.Length, 512); // 最初の512バイトだけ取得
+                    string firstHexString = BitConverter.ToString(fileBytes.Take(displayLength).ToArray());
+
+                    // 読み込んだバイナリデータの最後の512バイトを表示
+                    byte[] lastBytes = fileBytes.Skip(Math.Max(0, fileBytes.Length - 512)).ToArray();
+                    string lastHexString = BitConverter.ToString(lastBytes);
+
+                    // メッセージボックスに表示
+                    MessageBox.Show($"最初の512バイトの16進数形式:\n{firstHexString}");
+                    MessageBox.Show($"最後の512バイトの16進数形式:\n{lastHexString}");
+
+                    // バイナリの先頭に0x00、末尾に0xFFを追加
+                    byte[] modifiedBytes = new byte[fileBytes.Length + 2];
+                    modifiedBytes[0] = 0x00; // 先頭に0x00
+                    Array.Copy(fileBytes, 0, modifiedBytes, 1, fileBytes.Length);
+                    modifiedBytes[modifiedBytes.Length - 1] = 0xFF; // 末尾に0xFF
+
+                    // 変更後のバイナリデータを最初の512バイトを表示
+                    int displayLength2 = Math.Min(modifiedBytes.Length, 512); // 最初の512バイトだけ表示
+                    string modifiedHexString = BitConverter.ToString(modifiedBytes.Take(displayLength2).ToArray());
+
+                    // 変更後バイナリデータの最後の512バイトを表示
+                    byte[] lastBytes2 = modifiedBytes.Skip(Math.Max(0, modifiedBytes.Length - 512)).ToArray();
+                    string lastHexString2 = BitConverter.ToString(lastBytes2);
+
+                    // メッセージボックスに表示
+                    MessageBox.Show($"変更後の512ファイルの16進数形式:\n{modifiedHexString}");
+                    MessageBox.Show($"変更後の512バイトの16進数形式:\n{lastHexString2}");
+
+                    // CR通信で送信
+                    if (serialPort.IsOpen)
+                    {
+                        serialPort.Write(modifiedBytes, 0, modifiedBytes.Length);
+                        MessageBox.Show("データを送信しました。");
+                    }
+                    else
+                    {
+                        MessageBox.Show("シリアルポートが開いていません。");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"エラーが発生しました: {ex.Message}");
+                }
+            }
+        }  
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // シリアルポートを閉じる
+            if (serialPort.IsOpen)
+            {
+                serialPort.Close();
+            }
+            base.OnFormClosed(e);
         }
 
         // TTS関連　//
