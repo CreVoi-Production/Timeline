@@ -73,10 +73,10 @@ namespace Timeline
             string[] availablePorts = SerialPort.GetPortNames();
 
             // 利用可能なポートを表示（デバッグや選択用）
-            foreach (string port in availablePorts)
-            {
-                MessageBox.Show("Available Port: " + port);
-            }
+            //foreach (string port in availablePorts)
+            //{
+            //    MessageBox.Show("Available Port: " + port);
+            //}
 
             // 使用するポートをセット
             if (availablePorts != null && availablePorts.Length > 0)
@@ -662,7 +662,6 @@ namespace Timeline
         //　Sendボタンを描画する
         private async void Send_button10(object sender, EventArgs e)
         {
-            // filePath指定　→　xxd -i /filePath/　→　CR通信(キャラクター型)(前に0x00, 後ろに0xffを入れる)
             if (!string.IsNullOrEmpty(sendfilePath))
             {
                 try
@@ -671,16 +670,16 @@ namespace Timeline
                     byte[] fileBytes = await Task.Run(() => File.ReadAllBytes(sendfilePath));
 
                     // 読み込んだバイナリデータの最初の512バイトを表示
-                    int displayLength = Math.Min(fileBytes.Length, 512); // 最初の512バイトだけ取得
-                    string firstHexString = BitConverter.ToString(fileBytes.Take(displayLength).ToArray());
+                    // int displayLength = Math.Min(fileBytes.Length, 512); // 最初の512バイトだけ取得
+                    // string firstHexString = BitConverter.ToString(fileBytes.Take(displayLength).ToArray());
 
                     // 読み込んだバイナリデータの最後の512バイトを表示
-                    byte[] lastBytes = fileBytes.Skip(Math.Max(0, fileBytes.Length - 512)).ToArray();
-                    string lastHexString = BitConverter.ToString(lastBytes);
+                    // byte[] lastBytes = fileBytes.Skip(Math.Max(0, fileBytes.Length - 512)).ToArray();
+                    // string lastHexString = BitConverter.ToString(lastBytes);
 
                     // メッセージボックスに表示
-                    MessageBox.Show($"最初の512バイトの16進数形式:\n{firstHexString}");
-                    MessageBox.Show($"最後の512バイトの16進数形式:\n{lastHexString}");
+                    // MessageBox.Show($"最初の512バイトの16進数形式:\n{firstHexString}");
+                    // MessageBox.Show($"最後の512バイトの16進数形式:\n{lastHexString}");
 
                     // バイナリの先頭に指定したバイトを追加するための配列を作成
                     byte[] modifiedBytes = new byte[fileBytes.Length + 11]; // 5 + 2（0x00 と 0xFF）
@@ -703,16 +702,37 @@ namespace Timeline
                     modifiedBytes[startIndex + 5] = 0x47; // 'G'
 
                     // 変更後のバイナリデータを最初の512バイトを表示
-                    int displayLength2 = Math.Min(modifiedBytes.Length, 512); // 最初の512バイトだけ表示
-                    string modifiedHexString = BitConverter.ToString(modifiedBytes.Take(displayLength2).ToArray());
+                    // int displayLength2 = Math.Min(modifiedBytes.Length, 512); // 最初の512バイトだけ表示
+                    // string modifiedHexString = BitConverter.ToString(modifiedBytes.Take(displayLength2).ToArray());
 
                     // 変更後バイナリデータの最後の512バイトを表示
-                    byte[] lastBytes2 = modifiedBytes.Skip(Math.Max(0, modifiedBytes.Length - 512)).ToArray();
-                    string lastHexString2 = BitConverter.ToString(lastBytes2);
+                    // byte[] lastBytes2 = modifiedBytes.Skip(Math.Max(0, modifiedBytes.Length - 512)).ToArray();
+                    // string lastHexString2 = BitConverter.ToString(lastBytes2);
 
                     // メッセージボックスに表示
-                    MessageBox.Show($"変更後の512ファイルの16進数形式:\n{modifiedHexString}");
-                    MessageBox.Show($"変更後の512バイトの16進数形式:\n{lastHexString2}");
+                    // MessageBox.Show($"変更後の512ファイルの16進数形式:\n{modifiedHexString}");
+                    // MessageBox.Show($"変更後の512バイトの16進数形式:\n{lastHexString2}");
+
+                    // ファイル保存ダイアログを表示
+                    using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+                    {
+                        saveFileDialog.Filter = "Text files (*.txt)|*.txt"; // テキストファイルのみ
+                        saveFileDialog.Title = "バイナリデータの保存先を指定してください";
+                        saveFileDialog.FileName = "binary_output.txt"; // デフォルトのファイル名
+
+                        // ユーザーが保存先を指定した場合のみ処理を進める
+                        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            // バイナリデータをテキストファイルに保存
+                            string hexData = BitConverter.ToString(modifiedBytes).Replace("-", " "); // バイナリデータを16進数形式に変換
+                            await File.WriteAllTextAsync(saveFileDialog.FileName, hexData); // テキストファイルに保存
+                            MessageBox.Show($"バイナリデータを {saveFileDialog.FileName} に保存しました。");
+                        }
+                        else
+                        {
+                            MessageBox.Show("ファイル保存がキャンセルされました。");
+                        }
+                    }
 
                     // CR通信で送信
                     if (serialPort.IsOpen && modifiedBytes.Length > 0)
@@ -728,6 +748,106 @@ namespace Timeline
                 catch (Exception ex)
                 {
                     MessageBox.Show($"エラーが発生しました: {ex.Message}");
+                }
+            }
+        }
+
+        //　Localボタンを描画する
+        private async void Local_button11(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "WAVファイル (*.wav)|*.wav"; // フィルタを設定
+                openFileDialog.Title = "WAVファイルを選択";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string sendfilePath = openFileDialog.FileName; // 選択したファイルのパス
+                    try
+                    {
+                        // WAVファイルのバイナリを読み込む
+                        byte[] fileBytes = await Task.Run(() => File.ReadAllBytes(sendfilePath));
+
+                        // 読み込んだバイナリデータの最初の512バイトを表示
+                        // int displayLength = Math.Min(fileBytes.Length, 512); // 最初の512バイトだけ取得
+                        // string firstHexString = BitConverter.ToString(fileBytes.Take(displayLength).ToArray());
+
+                        // 読み込んだバイナリデータの最後の512バイトを表示
+                        // byte[] lastBytes = fileBytes.Skip(Math.Max(0, fileBytes.Length - 512)).ToArray();
+                        // string lastHexString = BitConverter.ToString(lastBytes);
+
+                        // メッセージボックスに表示
+                        // MessageBox.Show($"最初の512バイトの16進数形式:\n{firstHexString}");
+                        // MessageBox.Show($"最後の512バイトの16進数形式:\n{lastHexString}");
+
+                        // バイナリの先頭に指定したバイトを追加するための配列を作成
+                        byte[] modifiedBytes = new byte[fileBytes.Length + 11]; // 5 + 2（0x00 と 0xFF）
+                        modifiedBytes[0] = 0x53; // 'S'
+                        modifiedBytes[1] = 0x54; // 'T'
+                        modifiedBytes[2] = 0x41; // 'A'
+                        modifiedBytes[3] = 0x52; // 'R'
+                        modifiedBytes[4] = 0x54; // 'T'
+
+                        // WAVファイルのバイナリを modifiedBytes の 5 バイト目から追加
+                        Array.Copy(fileBytes, 0, modifiedBytes, 5, fileBytes.Length);
+
+                        // 末尾に追加のバイトを設定
+                        int startIndex = 5 + fileBytes.Length; // 追加バイトの開始インデックス
+                        modifiedBytes[startIndex] = 0x45; // 'E'
+                        modifiedBytes[startIndex + 1] = 0x4E; // 'N'
+                        modifiedBytes[startIndex + 2] = 0x44; // 'D'
+                        modifiedBytes[startIndex + 3] = 0x49; // 'I'
+                        modifiedBytes[startIndex + 4] = 0x4E; // 'N'
+                        modifiedBytes[startIndex + 5] = 0x47; // 'G'
+
+                        // 変更後のバイナリデータを最初の512バイトを表示
+                        // int displayLength2 = Math.Min(modifiedBytes.Length, 512); // 最初の512バイトだけ表示
+                        // string modifiedHexString = BitConverter.ToString(modifiedBytes.Take(displayLength2).ToArray());
+
+                        // 変更後バイナリデータの最後の512バイトを表示
+                        // byte[] lastBytes2 = modifiedBytes.Skip(Math.Max(0, modifiedBytes.Length - 512)).ToArray();
+                        // string lastHexString2 = BitConverter.ToString(lastBytes2);
+
+                        // メッセージボックスに表示
+                        // MessageBox.Show($"変更後の512ファイルの16進数形式:\n{modifiedHexString}");
+                        // MessageBox.Show($"変更後の512バイトの16進数形式:\n{lastHexString2}");
+
+                        // ファイル保存ダイアログを表示
+                        using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+                        {
+                            saveFileDialog.Filter = "Text files (*.txt)|*.txt"; // テキストファイルのみ
+                            saveFileDialog.Title = "バイナリデータの保存先を指定してください";
+                            saveFileDialog.FileName = "binary_output.txt"; // デフォルトのファイル名
+
+                            // ユーザーが保存先を指定した場合のみ処理を進める
+                            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                            {
+                                // バイナリデータをテキストファイルに保存
+                                string hexData = BitConverter.ToString(modifiedBytes).Replace("-", " "); // バイナリデータを16進数形式に変換
+                                await File.WriteAllTextAsync(saveFileDialog.FileName, hexData); // テキストファイルに保存
+                                MessageBox.Show($"バイナリデータを {saveFileDialog.FileName} に保存しました。");
+                            }
+                            else
+                            {
+                                MessageBox.Show("ファイル保存がキャンセルされました。");
+                            }
+                        }
+
+                        // CR通信で送信
+                        if (serialPort.IsOpen && modifiedBytes.Length > 0)
+                        {
+                            serialPort.Write(modifiedBytes, 0, modifiedBytes.Length);
+                            MessageBox.Show("データを送信しました。");
+                        }
+                        else
+                        {
+                            MessageBox.Show("シリアルポートが開いていません。");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"エラーが発生しました: {ex.Message}");
+                    }
                 }
             }
         }
@@ -1017,7 +1137,7 @@ namespace Timeline
                 File.Delete("temp.bat");
 
                 string filePath = filename;
-                
+
                 // ファイルをタイムラインに追加
                 AddToTimeline(filePath);
 

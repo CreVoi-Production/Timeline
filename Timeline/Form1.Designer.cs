@@ -69,6 +69,7 @@
             label9 = new Label();
             comboBox2 = new ComboBox();
             button10 = new Button();
+            button11 = new Button();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
@@ -98,7 +99,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(26, 450);
+            button1.Location = new Point(35, 414);
             button1.Name = "button1";
             button1.Size = new Size(104, 29);
             button1.TabIndex = 1;
@@ -124,7 +125,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(426, 450);
+            button2.Location = new Point(435, 414);
             button2.Name = "button2";
             button2.Size = new Size(104, 29);
             button2.TabIndex = 2;
@@ -134,7 +135,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(536, 450);
+            button3.Location = new Point(545, 414);
             button3.Name = "button3";
             button3.Size = new Size(104, 29);
             button3.TabIndex = 3;
@@ -174,7 +175,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(646, 450);
+            button4.Location = new Point(655, 414);
             button4.Name = "button4";
             button4.Size = new Size(104, 29);
             button4.TabIndex = 6;
@@ -184,7 +185,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(136, 450);
+            button5.Location = new Point(145, 414);
             button5.Name = "button5";
             button5.Size = new Size(104, 29);
             button5.TabIndex = 7;
@@ -202,7 +203,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(756, 450);
+            button6.Location = new Point(765, 414);
             button6.Name = "button6";
             button6.Size = new Size(104, 29);
             button6.TabIndex = 8;
@@ -212,7 +213,7 @@
             // 
             // button7
             // 
-            button7.Location = new Point(136, 485);
+            button7.Location = new Point(145, 449);
             button7.Name = "button7";
             button7.Size = new Size(104, 29);
             button7.TabIndex = 10;
@@ -452,7 +453,7 @@
             // 
             // button10
             // 
-            button10.Location = new Point(756, 484);
+            button10.Location = new Point(765, 448);
             button10.Name = "button10";
             button10.Size = new Size(104, 29);
             button10.TabIndex = 27;
@@ -460,12 +461,23 @@
             button10.UseVisualStyleBackColor = true;
             button10.Click += Send_button10;
             // 
+            // button11
+            // 
+            button11.Location = new Point(765, 483);
+            button11.Name = "button11";
+            button11.Size = new Size(104, 29);
+            button11.TabIndex = 28;
+            button11.Text = "Local";
+            button11.UseVisualStyleBackColor = true;
+            button11.Click += Local_button11;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
             ClientSize = new Size(1216, 525);
+            Controls.Add(button11);
             Controls.Add(button10);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
@@ -536,5 +548,6 @@
         private TrackBar trackBar4;
         private TextBox textBox5;
         private Label label10;
+        private Button button11;
     }
 }
