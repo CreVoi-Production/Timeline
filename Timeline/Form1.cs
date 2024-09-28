@@ -15,6 +15,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using NAudio.CoreAudioApi;
+using System.Media;
 
 namespace Timeline
 {
@@ -80,14 +81,20 @@ namespace Timeline
             // 使用するポートをセット
             if (availablePorts != null && availablePorts.Length > 0)
             {
-                // ポート名を設定
-                serialPort.PortName = availablePorts[0]; // 最初のポートを使用
+                // シリアルポートの初期設定
+                serialPort = new SerialPort
+                {
+                    BaudRate = 115200,         // ボーレートを115200bpsに設定
+                    Parity = Parity.None,       // パリティをなしに設定
+                    DataBits = 8,               // データビットを8に設定
+                    StopBits = StopBits.One,    // ストップビットを1に設定
+                    PortName = availablePorts[0]           // COMポート名を設定 (実際の環境に合わせて変更)
+                };
             }
             else
             {
                 MessageBox.Show("利用可能なシリアルポートがありません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-
             try
             {
                 serialPort.Open(); // シリアルポートを開く
@@ -675,11 +682,25 @@ namespace Timeline
                     MessageBox.Show($"最初の512バイトの16進数形式:\n{firstHexString}");
                     MessageBox.Show($"最後の512バイトの16進数形式:\n{lastHexString}");
 
-                    // バイナリの先頭に0x00、末尾に0xFFを追加
-                    byte[] modifiedBytes = new byte[fileBytes.Length + 2];
-                    modifiedBytes[0] = 0x00; // 先頭に0x00
-                    Array.Copy(fileBytes, 0, modifiedBytes, 1, fileBytes.Length);
-                    modifiedBytes[modifiedBytes.Length - 1] = 0xFF; // 末尾に0xFF
+                    // バイナリの先頭に指定したバイトを追加するための配列を作成
+                    byte[] modifiedBytes = new byte[fileBytes.Length + 11]; // 5 + 2（0x00 と 0xFF）
+                    modifiedBytes[0] = 0x53; // 'S'
+                    modifiedBytes[1] = 0x54; // 'T'
+                    modifiedBytes[2] = 0x41; // 'A'
+                    modifiedBytes[3] = 0x52; // 'R'
+                    modifiedBytes[4] = 0x54; // 'T'
+
+                    // WAVファイルのバイナリを modifiedBytes の 5 バイト目から追加
+                    Array.Copy(fileBytes, 0, modifiedBytes, 5, fileBytes.Length);
+
+                    // 末尾に追加のバイトを設定
+                    int startIndex = 5 + fileBytes.Length; // 追加バイトの開始インデックス
+                    modifiedBytes[startIndex] = 0x45; // 'E'
+                    modifiedBytes[startIndex + 1] = 0x4E; // 'N'
+                    modifiedBytes[startIndex + 2] = 0x44; // 'D'
+                    modifiedBytes[startIndex + 3] = 0x49; // 'I'
+                    modifiedBytes[startIndex + 4] = 0x4E; // 'N'
+                    modifiedBytes[startIndex + 5] = 0x47; // 'G'
 
                     // 変更後のバイナリデータを最初の512バイトを表示
                     int displayLength2 = Math.Min(modifiedBytes.Length, 512); // 最初の512バイトだけ表示
@@ -694,7 +715,7 @@ namespace Timeline
                     MessageBox.Show($"変更後の512バイトの16進数形式:\n{lastHexString2}");
 
                     // CR通信で送信
-                    if (serialPort.IsOpen)
+                    if (serialPort.IsOpen && modifiedBytes.Length > 0)
                     {
                         serialPort.Write(modifiedBytes, 0, modifiedBytes.Length);
                         MessageBox.Show("データを送信しました。");
@@ -709,7 +730,7 @@ namespace Timeline
                     MessageBox.Show($"エラーが発生しました: {ex.Message}");
                 }
             }
-        }  
+        }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
@@ -932,8 +953,19 @@ namespace Timeline
         }
 
         // VC関連　//
+        private string Getvoicechangercharacter(string speakername)
+        {
+            Dictionary<string, string> speakerids = new Dictionary<string, string>()
+            {
+                {"ずんだもん","zundamon-1"},
+                {"あみたろ","Amitaro_Zero_100e_3700s"}
+            };
+            return speakerids[speakername];
+        }
+
         private bool recording = false;
-        WaveFileWriter waveWriter;
+        WaveInEvent VCwaveIn;
+        WaveFileWriter VCwaveWriter;
 
         //　
         private void Recording_button9(object sender, EventArgs e)
@@ -943,39 +975,70 @@ namespace Timeline
                 var deviceNumber = 0;
 
                 // 録画処理を開始
-                // WaveIn だと、「System.InvalidOperationException: 'Use WaveInEvent to record on a background thread'」のエラーが発生する
-                // waveIn = new WaveIn();
-                waveIn = new WaveInEvent();
-                waveIn.DeviceNumber = deviceNumber;
-                waveIn.WaveFormat = new WaveFormat(48000, WaveIn.GetCapabilities(deviceNumber).Channels);
+                VCwaveIn = new WaveInEvent();
+                VCwaveIn.DeviceNumber = deviceNumber;
+                VCwaveIn.WaveFormat = new WaveFormat(48000, WaveIn.GetCapabilities(deviceNumber).Channels);
 
-                waveWriter = new WaveFileWriter(".\\" + fileindex + "_record.wav", waveIn.WaveFormat);
-                fileindex++;
+                VCwaveWriter = new WaveFileWriter(".\\" + "record_temp.wav", VCwaveIn.WaveFormat);
 
-                waveIn.DataAvailable += (_, ee) =>
+                VCwaveIn.DataAvailable += (_, ee) =>
                 {
-                    waveWriter.Write(ee.Buffer, 0, ee.BytesRecorded);
-                    waveWriter.Flush();
+                    VCwaveWriter.Write(ee.Buffer, 0, ee.BytesRecorded);
+                    VCwaveWriter.Flush();
                 };
 
-                waveIn.StartRecording();
+                VCwaveIn.StartRecording();
                 button9.Text = "録音停止";
                 recording = true;
             }
             else
             {
-                waveIn?.StopRecording();
-                waveIn?.Dispose();
-                waveIn = null;
+                VCwaveIn?.StopRecording();
+                VCwaveIn?.Dispose();
+                VCwaveIn = null;
 
-                waveWriter?.Close();
-                waveWriter = null;
+                VCwaveWriter?.Close();
+                VCwaveWriter = null;
+                button9.Enabled = false;
+                button9.Text = "処理中";
+
+                // ボイスチェンジ開始
+                string voice = Getvoicechangercharacter(comboBox2.Text);
+                string pitch = textBox5.Text;
+                filename = fileindex + "_vc";
+                // string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename + ".wav";
+                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + ".\\record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2";
+                StreamWriter sw = new StreamWriter("temp.bat", false);
+                sw.WriteLine(command);
+                sw.Close();
+                Process p = Process.Start("temp.bat");
+                p.WaitForExit();
+
+                File.Delete("temp.bat");
+
+                string filePath = filename;
+                
+                // ファイルをタイムラインに追加
+                AddToTimeline(filePath);
+
                 button9.Text = "録音";
+                button9.Enabled = true;
                 recording = false;
+                fileindex++;
             }
         }
 
-        private void VSCharacter_comboBox2(object sender, EventArgs e)
+        private void VCVoiceHeight_textBox5(object sender, EventArgs e)
+        {
+
+        }
+
+        private void VCVoiceHeight_trackBar4(object sender, EventArgs e)
+        {
+            textBox5.Text = trackBar4.Value.ToString();
+        }
+
+        private void VCCharacter_comboBox2(object sender, EventArgs e)
         {
 
         }

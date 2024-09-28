@@ -62,7 +62,10 @@
             textBox4 = new TextBox();
             groupBox1 = new GroupBox();
             groupBox2 = new GroupBox();
+            textBox5 = new TextBox();
+            label10 = new Label();
             button9 = new Button();
+            trackBar4 = new TrackBar();
             label9 = new Label();
             comboBox2 = new ComboBox();
             button10 = new Button();
@@ -72,6 +75,7 @@
             ((System.ComponentModel.ISupportInitialize)trackBar3).BeginInit();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)trackBar4).BeginInit();
             SuspendLayout();
             // 
             // panel1
@@ -94,7 +98,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(26, 395);
+            button1.Location = new Point(26, 450);
             button1.Name = "button1";
             button1.Size = new Size(104, 29);
             button1.TabIndex = 1;
@@ -120,7 +124,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(426, 395);
+            button2.Location = new Point(426, 450);
             button2.Name = "button2";
             button2.Size = new Size(104, 29);
             button2.TabIndex = 2;
@@ -130,7 +134,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(536, 395);
+            button3.Location = new Point(536, 450);
             button3.Name = "button3";
             button3.Size = new Size(104, 29);
             button3.TabIndex = 3;
@@ -170,7 +174,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(646, 395);
+            button4.Location = new Point(646, 450);
             button4.Name = "button4";
             button4.Size = new Size(104, 29);
             button4.TabIndex = 6;
@@ -180,7 +184,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(136, 395);
+            button5.Location = new Point(136, 450);
             button5.Name = "button5";
             button5.Size = new Size(104, 29);
             button5.TabIndex = 7;
@@ -198,7 +202,7 @@
             // 
             // button6
             // 
-            button6.Location = new Point(756, 395);
+            button6.Location = new Point(756, 450);
             button6.Name = "button6";
             button6.Size = new Size(104, 29);
             button6.TabIndex = 8;
@@ -208,7 +212,7 @@
             // 
             // button7
             // 
-            button7.Location = new Point(136, 430);
+            button7.Location = new Point(136, 485);
             button7.Name = "button7";
             button7.Size = new Size(104, 29);
             button7.TabIndex = 10;
@@ -374,26 +378,57 @@
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(textBox5);
+            groupBox2.Controls.Add(label10);
             groupBox2.Controls.Add(button9);
+            groupBox2.Controls.Add(trackBar4);
             groupBox2.Controls.Add(label9);
             groupBox2.Controls.Add(comboBox2);
             groupBox2.Location = new Point(875, 354);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(331, 104);
+            groupBox2.Size = new Size(331, 159);
             groupBox2.TabIndex = 26;
             groupBox2.TabStop = false;
             groupBox2.Text = "VC";
             groupBox2.Enter += VC_groupBox2;
             // 
+            // textBox5
+            // 
+            textBox5.Location = new Point(13, 83);
+            textBox5.Name = "textBox5";
+            textBox5.Size = new Size(106, 27);
+            textBox5.TabIndex = 26;
+            textBox5.Text = "0";
+            textBox5.TextChanged += VCVoiceHeight_textBox5;
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new Point(18, 60);
+            label10.Name = "label10";
+            label10.Size = new Size(90, 20);
+            label10.TabIndex = 25;
+            label10.Text = "VoiceHeight";
+            // 
             // button9
             // 
-            button9.Location = new Point(13, 65);
+            button9.Location = new Point(13, 122);
             button9.Name = "button9";
             button9.Size = new Size(312, 29);
             button9.TabIndex = 25;
             button9.Text = "Recording";
             button9.UseVisualStyleBackColor = true;
             button9.Click += Recording_button9;
+            // 
+            // trackBar4
+            // 
+            trackBar4.Location = new Point(131, 60);
+            trackBar4.Maximum = 12;
+            trackBar4.Minimum = -12;
+            trackBar4.Name = "trackBar4";
+            trackBar4.Size = new Size(194, 56);
+            trackBar4.TabIndex = 25;
+            trackBar4.Scroll += VCVoiceHeight_trackBar4;
             // 
             // label9
             // 
@@ -412,12 +447,12 @@
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(194, 28);
             comboBox2.TabIndex = 25;
-            comboBox2.Text = "四国めたん";
-            comboBox2.SelectedIndexChanged += VSCharacter_comboBox2;
+            comboBox2.Text = "ずんだもん";
+            comboBox2.SelectedIndexChanged += VCCharacter_comboBox2;
             // 
             // button10
             // 
-            button10.Location = new Point(756, 429);
+            button10.Location = new Point(756, 484);
             button10.Name = "button10";
             button10.Size = new Size(104, 29);
             button10.TabIndex = 27;
@@ -430,7 +465,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(1216, 470);
+            ClientSize = new Size(1216, 525);
             Controls.Add(button10);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
@@ -458,6 +493,7 @@
             groupBox1.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)trackBar4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -497,5 +533,8 @@
         private ComboBox comboBox2;
         private Button button9;
         private Button button10;
+        private TrackBar trackBar4;
+        private TextBox textBox5;
+        private Label label10;
     }
 }
