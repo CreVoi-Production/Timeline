@@ -63,14 +63,18 @@
             button9 = new Button();
             groupBox1 = new GroupBox();
             groupBox2 = new GroupBox();
+            label10 = new Label();
+            trackBar4 = new TrackBar();
             label9 = new Label();
             comboBox2 = new ComboBox();
+            textBox5 = new TextBox();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar3).BeginInit();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)trackBar4).BeginInit();
             SuspendLayout();
             // 
             // panel1
@@ -318,6 +322,7 @@
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(392, 40);
             comboBox1.TabIndex = 20;
+            comboBox1.Text = "四国めたん";
             // 
             // label8
             // 
@@ -387,6 +392,9 @@
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(textBox5);
+            groupBox2.Controls.Add(label10);
+            groupBox2.Controls.Add(trackBar4);
             groupBox2.Controls.Add(label9);
             groupBox2.Controls.Add(comboBox2);
             groupBox2.Controls.Add(button9);
@@ -396,6 +404,25 @@
             groupBox2.TabIndex = 27;
             groupBox2.TabStop = false;
             groupBox2.Text = "ボイスチェンジ";
+            // 
+            // label10
+            // 
+            label10.AutoSize = true;
+            label10.Location = new Point(29, 209);
+            label10.Name = "label10";
+            label10.Size = new Size(62, 32);
+            label10.TabIndex = 25;
+            label10.Text = "声高";
+            // 
+            // trackBar4
+            // 
+            trackBar4.Location = new Point(191, 206);
+            trackBar4.Maximum = 12;
+            trackBar4.Minimum = -12;
+            trackBar4.Name = "trackBar4";
+            trackBar4.Size = new Size(352, 90);
+            trackBar4.TabIndex = 25;
+            trackBar4.Scroll += trackBar4_Scroll;
             // 
             // label9
             // 
@@ -414,6 +441,15 @@
             comboBox2.Name = "comboBox2";
             comboBox2.Size = new Size(369, 40);
             comboBox2.TabIndex = 25;
+            comboBox2.Text = "ずんだもん";
+            // 
+            // textBox5
+            // 
+            textBox5.Location = new Point(114, 209);
+            textBox5.Name = "textBox5";
+            textBox5.Size = new Size(71, 39);
+            textBox5.TabIndex = 25;
+            textBox5.Text = "0";
             // 
             // Form1
             // 
@@ -447,6 +483,7 @@
             groupBox1.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)trackBar4).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -485,5 +522,8 @@
         private GroupBox groupBox2;
         private Label label9;
         private ComboBox comboBox2;
+        private Label label10;
+        private TrackBar trackBar4;
+        private TextBox textBox5;
     }
 }

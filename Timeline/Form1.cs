@@ -10,6 +10,7 @@ using static Timeline.Form1;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 using System.Diagnostics;
 using Newtonsoft.Json;
+using System.Media;
 
 namespace Timeline
 {
@@ -1080,6 +1081,17 @@ namespace Timeline
         }
 
         // ここからボイスチェンジ
+
+        private string Getvoicechangercharacter(string speakername)
+        {
+            Dictionary<string, string> speakerids = new Dictionary<string, string>()
+            {
+                {"ずんだもん","zundamon-1"},
+                {"あみたろ","Amitaro_Zero_100e_3700s"}
+            };
+            return speakerids[speakername];
+        }
+
         private bool recording = false;
         WaveInEvent waveIn;
         WaveFileWriter waveWriter;
@@ -1090,14 +1102,11 @@ namespace Timeline
                 var deviceNumber = 0;
 
                 // 録画処理を開始
-                // WaveIn だと、「System.InvalidOperationException: 'Use WaveInEvent to record on a background thread'」のエラーが発生する
-                // waveIn = new WaveIn();
                 waveIn = new WaveInEvent();
                 waveIn.DeviceNumber = deviceNumber;
                 waveIn.WaveFormat = new WaveFormat(48000, WaveIn.GetCapabilities(deviceNumber).Channels);
 
-                waveWriter = new WaveFileWriter(".\\" + fileindex + "_record.wav", waveIn.WaveFormat);
-                fileindex++;
+                waveWriter = new WaveFileWriter(".\\" + "record_temp.wav", waveIn.WaveFormat);
 
                 waveIn.DataAvailable += (_, ee) =>
                 {
@@ -1117,9 +1126,45 @@ namespace Timeline
 
                 waveWriter?.Close();
                 waveWriter = null;
+                button9.Enabled = false;
+                button9.Text = "処理中";
+
+                // ボイスチェンジ開始
+                string voice = Getvoicechangercharacter(comboBox2.Text);
+                string pitch = textBox5.Text;
+                filename = fileindex + "_vc.wav";
+                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename;
+                StreamWriter sw = new StreamWriter("temp.bat", false);
+                sw.WriteLine(command);
+                sw.Close();
+                Process p = Process.Start("temp.bat");
+                p.WaitForExit();
+
+                File.Delete("temp.bat");
+
+                string filePath = filename;
+                TimelineObject timelineObject = _audioPlayer.Load(filePath);
+                // タイムラインオブジェクトとして追加
+                _timeline.AddObject(timelineObject);
+                // タイムラインの長さを音声ファイルの長さに合わせて更新
+                UpdateTrackBar(TimeSpan.Zero, _audioPlayer.TotalTime);
+                // 最も早い開始時間を表示
+                DisplayFirstObjectStartTime();
+                // タイムラインの終了時間を更新
+                UpdateTimelineEndTime();
+                // タイムラインを再描画
+                panel1.Invalidate();
+
                 button9.Text = "録音";
+                button9.Enabled = true;
                 recording = false;
+                fileindex++;
             }
+        }
+
+        private void trackBar4_Scroll(object sender, EventArgs e)
+        {
+            textBox5.Text = trackBar4.Value.ToString();
         }
     }
 }
