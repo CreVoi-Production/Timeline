@@ -763,10 +763,28 @@ namespace Timeline
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string sendfilePath = openFileDialog.FileName; // 選択したファイルのパス
+                    string outputFilePath = "";
+
+                    // 保存先をユーザーに指定させる
+                    using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+                    {
+                        saveFileDialog.Filter = "WAVファイル (*.wav)|*.wav";
+                        saveFileDialog.Title = "保存先を指定";
+                        saveFileDialog.FileName = "converted_8000Hz.wav";
+
+                        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            outputFilePath = saveFileDialog.FileName;
+
+                            // サンプリングレートを8000Hzに変換
+                            ConvertWavFileSampleRate(sendfilePath, outputFilePath);
+                        }
+                    }
+
                     try
                     {
-                        // WAVファイルのバイナリを読み込む
-                        byte[] fileBytes = await Task.Run(() => File.ReadAllBytes(sendfilePath));
+                        // サンプリングレートを8000Hzに変換したファイルを読み込む
+                        byte[] fileBytes = await Task.Run(() => File.ReadAllBytes(outputFilePath));
 
                         // 読み込んだバイナリデータの最初の512バイトを表示
                         // int displayLength = Math.Min(fileBytes.Length, 512); // 最初の512バイトだけ取得
@@ -849,6 +867,33 @@ namespace Timeline
                         MessageBox.Show($"エラーが発生しました: {ex.Message}");
                     }
                 }
+            }
+        }
+
+        private async void ConvertWavFileSampleRate(string inputFilePath, string outputFilePath)
+        {
+            try
+            {
+                // 入力ファイルの読み込み
+                using (WaveFileReader reader = new WaveFileReader(inputFilePath))
+                {
+                    // 変換後のフォーマットを8000Hz、8ビット、モノラルに設定
+                    WaveFormat newFormat = new WaveFormat(8000, 8, 1);
+
+                    // サンプリングレートの変換
+                    using (WaveFormatConversionStream conversionStream = new WaveFormatConversionStream(newFormat, reader))
+                    {
+                        // 変換後のWAVファイルを保存
+                        WaveFileWriter.CreateWaveFile(outputFilePath, conversionStream);
+                    }
+                }
+
+                // 変換が完了したことをユーザーに通知
+                MessageBox.Show($"ファイルのサンプリングレートを8000Hzに変換しました: {outputFilePath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"エラーが発生しました: {ex.Message}");
             }
         }
 
@@ -1126,7 +1171,7 @@ namespace Timeline
                 string voice = Getvoicechangercharacter(comboBox2.Text);
                 string pitch = textBox5.Text;
                 filename = fileindex + "_vc.wav";
-                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename;
+                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename + " --device cpu" ;
                 StreamWriter sw = new StreamWriter("temp.bat", false);
                 sw.WriteLine(command);
                 sw.Close();
