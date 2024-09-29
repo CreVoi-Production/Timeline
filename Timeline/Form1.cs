@@ -1125,9 +1125,8 @@ namespace Timeline
                 // ボイスチェンジ開始
                 string voice = Getvoicechangercharacter(comboBox2.Text);
                 string pitch = textBox5.Text;
-                filename = fileindex + "_vc";
-                // string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename + ".wav";
-                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + ".\\record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2";
+                filename = fileindex + "_vc.wav";
+                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename;
                 StreamWriter sw = new StreamWriter("temp.bat", false);
                 sw.WriteLine(command);
                 sw.Close();
