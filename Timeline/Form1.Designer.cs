@@ -275,9 +275,10 @@
             label5.AutoSize = true;
             label5.Location = new Point(13, 166);
             label5.Name = "label5";
-            label5.Size = new Size(90, 20);
+            label5.Size = new Size(41, 20);
             label5.TabIndex = 16;
-            label5.Text = "VoiceHeight";
+            label5.Text = "Pitch";
+            label5.Click += label5_Click;
             // 
             // label6
             // 
@@ -407,9 +408,9 @@
             label10.AutoSize = true;
             label10.Location = new Point(18, 60);
             label10.Name = "label10";
-            label10.Size = new Size(90, 20);
+            label10.Size = new Size(41, 20);
             label10.TabIndex = 25;
-            label10.Text = "VoiceHeight";
+            label10.Text = "Pitch";
             // 
             // button9
             // 

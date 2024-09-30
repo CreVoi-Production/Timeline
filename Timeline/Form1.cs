@@ -1153,7 +1153,7 @@ namespace Timeline
                 };
 
                 VCwaveIn.StartRecording();
-                button9.Text = "録音停止";
+                button9.Text = "Stop";
                 recording = true;
             }
             else
@@ -1165,13 +1165,13 @@ namespace Timeline
                 VCwaveWriter?.Close();
                 VCwaveWriter = null;
                 button9.Enabled = false;
-                button9.Text = "処理中";
+                button9.Text = "Processing";
 
                 // ボイスチェンジ開始
                 string voice = Getvoicechangercharacter(comboBox2.Text);
                 string pitch = textBox5.Text;
                 filename = fileindex + "_vc.wav";
-                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename + " --device cpu" ;
+                string command = "call venv\\Scripts\\activate & python -m rvc_python -i " + "record_temp.wav" + " -mp .\\voice\\" + voice + ".pth " + "-pi " + pitch + " -me rmvpe -v v2 " + "-o " + filename + " --device cpu";
                 StreamWriter sw = new StreamWriter("temp.bat", false);
                 sw.WriteLine(command);
                 sw.Close();
@@ -1185,7 +1185,7 @@ namespace Timeline
                 // ファイルをタイムラインに追加
                 AddToTimeline(filePath);
 
-                button9.Text = "録音";
+                button9.Text = "Record";
                 button9.Enabled = true;
                 recording = false;
                 fileindex++;
@@ -1689,6 +1689,11 @@ namespace Timeline
         }
 
         private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label5_Click(object sender, EventArgs e)
         {
 
         }
