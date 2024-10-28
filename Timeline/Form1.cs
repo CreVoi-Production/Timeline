@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using NAudio.Lame;
 using System.Text;
 using static Timeline.Form1;
@@ -1401,293 +1402,6 @@ namespace Timeline
             return maxRight - ClientSize.Width; // スクロールの最大幅
         }
 
-        //　タイムライン上のオーディオオブジェクトを管理する
-        public class Timeline
-        {
-            private List<TimelineObject> _objects = new List<TimelineObject>();
-
-            //　新しいオブジェクトをタイムラインに追加する
-            public void AddObject(TimelineObject newObject)
-            {
-                int targetLayer = 0;
-                bool overlapFound;
-
-                do
-                {
-                    overlapFound = false;
-
-                    // 同じレイヤー内のオブジェクトとの衝突をチェック
-                    foreach (var existingObject in _objects)
-                    {
-                        if (existingObject.Layer == targetLayer && IsOverlapping(existingObject, newObject))
-                        {
-                            overlapFound = true;
-                            targetLayer++;  // レイヤーを1つ上に移動
-                            break;
-                        }
-                    }
-                } while (overlapFound);
-
-                // 衝突のないレイヤーが見つかったので、そのレイヤーに配置
-                newObject.Layer = targetLayer;
-                _objects.Add(newObject);
-            }
-
-            // オブジェクトが重なっているかどうかを判定する
-            private bool IsOverlapping(TimelineObject obj1, TimelineObject obj2)
-            {
-                return obj1.StartTime < obj2.StartTime + obj2.Duration &&
-                       obj2.StartTime < obj1.StartTime + obj1.Duration;
-            }
-
-            //　指定したオブジェクトをタイムラインから削除する
-            public void RemoveObject(TimelineObject obj)
-            {
-                _objects.Remove(obj);
-            }
-
-            //　タイムライン上のすべてのオブジェクトのリストを返す
-            public List<TimelineObject> GetObjects()
-            {
-                return _objects;
-            }
-
-            //　タイムライン全体の長さを取得する
-            public TimeSpan TotalDuration
-            {
-                get
-                {
-                    if (_objects.Count == 0)
-                    {
-                        return TimeSpan.Zero;
-                    }
-
-                    var firstStart = _objects.Min(o => o.StartTime);
-                    var lastEnd = _objects.Max(o => o.StartTime + o.Duration);
-
-                    return lastEnd - firstStart;
-                }
-            }
-
-            // IsSelected = trueのオブジェクトを取得する
-            public List<TimelineObject> GetSelectedObjects()
-            {
-                return _objects.Where(o => o.IsSelected).ToList();
-            }
-        }
-
-        // オブジェクトのプロパティを保持する
-        public class TimelineObject
-        {
-            private TimeSpan _startTime;
-            private WaveOffsetStream _waveOffsetStream; // WaveOffsetStreamを使用する
-            public TimeSpan Duration { get; set; }
-            public TimeSpan EndTime => StartTime + Duration;
-            public int Layer { get; set; }
-            public string FilePath { get; set; }
-            public bool IsSelected { get; set; } // 選択状態
-            public Point DrawingPosition { get; set; }　// 描画座標を保持する
-
-            public string FileName => Path.GetFileName(FilePath);
-
-            //　初期化
-            public TimelineObject(TimeSpan startTime, WaveOffsetStream waveOffsetStream, TimeSpan duration, int layer, string filePath)
-            {
-                _startTime = startTime;
-                _waveOffsetStream = waveOffsetStream;
-                Duration = duration;
-                Layer = layer;
-                FilePath = filePath;
-                IsSelected = false; // 初期状態では選択されていない
-            }
-
-            // StartTimeプロパティ
-            public TimeSpan StartTime
-            {
-                get => _startTime;
-                set
-                {
-                    _startTime = value;
-                    if (_waveOffsetStream != null)
-                    {
-                        // StartTimeの変更をWaveOffsetStreamに反映
-                        _waveOffsetStream.StartTime = _startTime;
-                    }
-                }
-            }
-        }
-
-        // 再生関連の機能を提供
-        public class AudioPlayer
-        {
-            private Timeline _timeline;
-
-            private List<CustomWavePlayer> _wavePlayers;
-            private List<CustomWaveStream> _waveStreams;
-            private List<CustomWaveOffsetStream> _waveOffsetStreams;
-            private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
-            private Dictionary<string, WaveStream> _filePathWaveStreamMap;
-            private Dictionary<string, WaveOffsetStream> _filePathWaveOffsetStreamMap;
-
-            public WaveStream waveStream { get; set; }
-            public IWavePlayer wavePlayer { get; set; }
-
-            // 初期化
-            public AudioPlayer()
-            {
-                _timeline = new Timeline();
-
-                _wavePlayers = new List<CustomWavePlayer>();
-                _waveStreams = new List<CustomWaveStream>();
-                _waveOffsetStreams = new List<CustomWaveOffsetStream>();
-                _filePathWaveStreamMap = new Dictionary<string, WaveStream>();
-                _waveStreamPlayerMap = new Dictionary<WaveStream, IWavePlayer>();
-                _filePathWaveOffsetStreamMap = new Dictionary<string, WaveOffsetStream>();
-            }
-
-            //　指定されたファイルパスからオーディオファイルを読み込む
-            public TimelineObject Load(string filePath)
-            {
-
-                var wavePlayer = new CustomWavePlayer(); // 引数なしのコンストラクターを使用
-                var waveStream = new AudioFileReader(filePath);
-
-                // PCM変換処理：MediaFoundationReaderで読み込み、PCMフォーマットに変換
-                var reader = new MediaFoundationReader(filePath);
-                var pcmStream = WaveFormatConversionStream.CreatePcmStream(reader);
-
-                // WaveOffsetStreamの作成
-                var waveOffsetStream = new CustomWaveOffsetStream(pcmStream, TimeSpan.Zero, TimeSpan.Zero, pcmStream.TotalTime);
-
-                wavePlayer.Init(waveOffsetStream); // CustomWavePlayerを初期化
-                _wavePlayers.Add(wavePlayer);
-
-                // waveOffsetStream を CustomWaveStream に変換
-                var customWaveStream = new CustomWaveStream(waveOffsetStream); // ここを修正
-
-                _waveStreams.Add(customWaveStream);
-                _filePathWaveStreamMap[filePath] = customWaveStream; // waveStream をマップに追加
-                _waveStreamPlayerMap[customWaveStream] = wavePlayer;
-                _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream;
-
-                // Durationは、waveStreamから取得する
-                TimeSpan duration = customWaveStream.TotalTime;
-
-                // TimelineObjectを作成して情報を格納
-                var TimelineObject = new TimelineObject(
-                    startTime: TimeSpan.Zero,
-                    waveOffsetStream: waveOffsetStream,
-                    duration: duration,
-                    layer: 0,
-                    filePath: filePath
-                )
-                {
-                    IsSelected = false // 初期状態では選択されていないものとする
-                };
-                return TimelineObject;
-            }
-
-
-            // すべてのオーディオプレイヤーで再生する
-            public void Play()
-            {
-                foreach (var player in _wavePlayers)
-                {
-                    player.Play();
-                }
-            }
-
-            //　すべてのオーディオプレイヤーで再生を停止する
-            public void Stop()
-            {
-                foreach (var player in _wavePlayers)
-                {
-                    player.Stop();
-                }
-            }
-
-            //　すべてのオーディオストリームの再生位置を先頭に戻す
-            public void Reset()
-            {
-                foreach (var stream in _waveStreams)
-                {
-                    stream.Position = 0; // 再生位置を先頭に戻す
-                }
-            }
-
-            // すべてのオブジェクトを削除する
-            public void Clean()
-            {
-                // リソースを解放してからリストをクリアする
-                foreach (var player in _wavePlayers)
-                {
-                    player.Dispose();
-                }
-                foreach (var stream in _waveStreams)
-                {
-                    stream.Dispose();
-                }
-                foreach (var offsetstream in _waveOffsetStreams)
-                {
-                    offsetstream.Dispose();
-                }
-
-                _wavePlayers.Clear();
-                _waveStreams.Clear();
-                _waveOffsetStreams.Clear();
-            }
-
-            // 選択されたオブジェクトに関連する WaveStream を削除する
-            public void Delete(List<TimelineObject> selectedObjects)
-            {
-                foreach (var obj in selectedObjects)
-                {
-                    // TimelineObject に紐付けられているファイルパスから WaveStream を取得
-                    var filePath = obj.FilePath;
-
-                    // ファイルパスに基づいて WaveStream をリストから検索
-                    if (_filePathWaveStreamMap.TryGetValue(filePath, out var waveStream) && waveStream is CustomWaveStream customWaveStream)
-                    {
-                        // wavePlayer の取得
-                        if (_waveStreamPlayerMap.TryGetValue(waveStream, out var wavePlayer) && wavePlayer is CustomWavePlayer customWavePlayer)
-                        {
-                            customWavePlayer.Stop(); // 再生を停止
-                            customWavePlayer.Dispose(); // WavePlayer を解放
-                            _wavePlayers.Remove(customWavePlayer); // _wavePlayers リストから削除
-                            _waveStreamPlayerMap.Remove(waveStream); // マップから削除
-
-                            // WaveStream を解放し、リストから削除
-                            customWaveStream.Dispose();
-                            _waveStreams.Remove(customWaveStream); // _waveStreams リストから削除
-                            _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
-                        }
-                    }
-                }
-            }
-
-            // 現在の再生位置を取得する
-            public TimeSpan CurrentTime
-            {
-                get
-                {
-                    if (_waveStreams.Count > 0)
-                        return _waveStreams[0].CurrentTime;
-                    return TimeSpan.Zero;
-                }
-            }
-
-            // オーディオファイルの総再生時間を取得する
-            public TimeSpan TotalTime
-            {
-                get
-                {
-                    if (_waveStreams.Count > 0)
-                        return _waveStreams[0].TotalTime;
-                    return TimeSpan.Zero;
-                }
-            }
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
 
@@ -1696,6 +1410,293 @@ namespace Timeline
         private void label5_Click(object sender, EventArgs e)
         {
 
+        }
+    }
+    
+    //　タイムライン上のオーディオオブジェクトを管理する
+    public class Timeline
+    {
+        private List<TimelineObject> _objects = new List<TimelineObject>();
+
+        //　新しいオブジェクトをタイムラインに追加する
+        public void AddObject(TimelineObject newObject)
+        {
+            int targetLayer = 0;
+            bool overlapFound;
+
+            do
+            {
+                overlapFound = false;
+
+                // 同じレイヤー内のオブジェクトとの衝突をチェック
+                foreach (var existingObject in _objects)
+                {
+                    if (existingObject.Layer == targetLayer && IsOverlapping(existingObject, newObject))
+                    {
+                        overlapFound = true;
+                        targetLayer++;  // レイヤーを1つ上に移動
+                        break;
+                    }
+                }
+            } while (overlapFound);
+
+            // 衝突のないレイヤーが見つかったので、そのレイヤーに配置
+            newObject.Layer = targetLayer;
+            _objects.Add(newObject);
+        }
+
+        // オブジェクトが重なっているかどうかを判定する
+        private bool IsOverlapping(TimelineObject obj1, TimelineObject obj2)
+        {
+            return obj1.StartTime < obj2.StartTime + obj2.Duration &&
+                   obj2.StartTime < obj1.StartTime + obj1.Duration;
+        }
+
+        //　指定したオブジェクトをタイムラインから削除する
+        public void RemoveObject(TimelineObject obj)
+        {
+            _objects.Remove(obj);
+        }
+
+        //　タイムライン上のすべてのオブジェクトのリストを返す
+        public List<TimelineObject> GetObjects()
+        {
+            return _objects;
+        }
+
+        //　タイムライン全体の長さを取得する
+        public TimeSpan TotalDuration
+        {
+            get
+            {
+                if (_objects.Count == 0)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                var firstStart = _objects.Min(o => o.StartTime);
+                var lastEnd = _objects.Max(o => o.StartTime + o.Duration);
+
+                return lastEnd - firstStart;
+            }
+        }
+
+        // IsSelected = trueのオブジェクトを取得する
+        public List<TimelineObject> GetSelectedObjects()
+        {
+            return _objects.Where(o => o.IsSelected).ToList();
+        }
+    }
+
+    // オブジェクトのプロパティを保持する
+    public class TimelineObject
+    {
+        private TimeSpan _startTime;
+        private WaveOffsetStream _waveOffsetStream; // WaveOffsetStreamを使用する
+        public TimeSpan Duration { get; set; }
+        public TimeSpan EndTime => StartTime + Duration;
+        public int Layer { get; set; }
+        public string FilePath { get; set; }
+        public bool IsSelected { get; set; } // 選択状態
+        public Point DrawingPosition { get; set; }　// 描画座標を保持する
+
+        public string FileName => Path.GetFileName(FilePath);
+
+        //　初期化
+        public TimelineObject(TimeSpan startTime, WaveOffsetStream waveOffsetStream, TimeSpan duration, int layer, string filePath)
+        {
+            _startTime = startTime;
+            _waveOffsetStream = waveOffsetStream;
+            Duration = duration;
+            Layer = layer;
+            FilePath = filePath;
+            IsSelected = false; // 初期状態では選択されていない
+        }
+
+        // StartTimeプロパティ
+        public TimeSpan StartTime
+        {
+            get => _startTime;
+            set
+            {
+                _startTime = value;
+                if (_waveOffsetStream != null)
+                {
+                    // StartTimeの変更をWaveOffsetStreamに反映
+                    _waveOffsetStream.StartTime = _startTime;
+                }
+            }
+        }
+    }
+
+    // 再生関連の機能を提供
+    public class AudioPlayer
+    {
+        private Timeline _timeline;
+
+        private List<CustomWavePlayer> _wavePlayers;
+        private List<CustomWaveStream> _waveStreams;
+        private List<CustomWaveOffsetStream> _waveOffsetStreams;
+        private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
+        private Dictionary<string, WaveStream> _filePathWaveStreamMap;
+        private Dictionary<string, WaveOffsetStream> _filePathWaveOffsetStreamMap;
+
+        public WaveStream waveStream { get; set; }
+        public IWavePlayer wavePlayer { get; set; }
+
+        // 初期化
+        public AudioPlayer()
+        {
+            _timeline = new Timeline();
+
+            _wavePlayers = new List<CustomWavePlayer>();
+            _waveStreams = new List<CustomWaveStream>();
+            _waveOffsetStreams = new List<CustomWaveOffsetStream>();
+            _filePathWaveStreamMap = new Dictionary<string, WaveStream>();
+            _waveStreamPlayerMap = new Dictionary<WaveStream, IWavePlayer>();
+            _filePathWaveOffsetStreamMap = new Dictionary<string, WaveOffsetStream>();
+        }
+
+        //　指定されたファイルパスからオーディオファイルを読み込む
+        public TimelineObject Load(string filePath)
+        {
+
+            var wavePlayer = new CustomWavePlayer(); // 引数なしのコンストラクターを使用
+            var waveStream = new AudioFileReader(filePath);
+
+            // PCM変換処理：MediaFoundationReaderで読み込み、PCMフォーマットに変換
+            var reader = new MediaFoundationReader(filePath);
+            var pcmStream = WaveFormatConversionStream.CreatePcmStream(reader);
+
+            // WaveOffsetStreamの作成
+            var waveOffsetStream = new CustomWaveOffsetStream(pcmStream, TimeSpan.Zero, TimeSpan.Zero, pcmStream.TotalTime);
+
+            wavePlayer.Init(waveOffsetStream); // CustomWavePlayerを初期化
+            _wavePlayers.Add(wavePlayer);
+
+            // waveOffsetStream を CustomWaveStream に変換
+            var customWaveStream = new CustomWaveStream(waveOffsetStream); // ここを修正
+
+            _waveStreams.Add(customWaveStream);
+            _filePathWaveStreamMap[filePath] = customWaveStream; // waveStream をマップに追加
+            _waveStreamPlayerMap[customWaveStream] = wavePlayer;
+            _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream;
+
+            // Durationは、waveStreamから取得する
+            TimeSpan duration = customWaveStream.TotalTime;
+
+            // TimelineObjectを作成して情報を格納
+            var TimelineObject = new TimelineObject(
+                startTime: TimeSpan.Zero,
+                waveOffsetStream: waveOffsetStream,
+                duration: duration,
+                layer: 0,
+                filePath: filePath
+            )
+            {
+                IsSelected = false // 初期状態では選択されていないものとする
+            };
+            return TimelineObject;
+        }
+
+
+        // すべてのオーディオプレイヤーで再生する
+        public void Play()
+        {
+            foreach (var player in _wavePlayers)
+            {
+                player.Play();
+            }
+        }
+
+        //　すべてのオーディオプレイヤーで再生を停止する
+        public void Stop()
+        {
+            foreach (var player in _wavePlayers)
+            {
+                player.Stop();
+            }
+        }
+
+        //　すべてのオーディオストリームの再生位置を先頭に戻す
+        public void Reset()
+        {
+            foreach (var stream in _waveStreams)
+            {
+                stream.Position = 0; // 再生位置を先頭に戻す
+            }
+        }
+
+        // すべてのオブジェクトを削除する
+        public void Clean()
+        {
+            // リソースを解放してからリストをクリアする
+            foreach (var player in _wavePlayers)
+            {
+                player.Dispose();
+            }
+            foreach (var stream in _waveStreams)
+            {
+                stream.Dispose();
+            }
+            foreach (var offsetstream in _waveOffsetStreams)
+            {
+                offsetstream.Dispose();
+            }
+
+            _wavePlayers.Clear();
+            _waveStreams.Clear();
+            _waveOffsetStreams.Clear();
+        }
+
+        // 選択されたオブジェクトに関連する WaveStream を削除する
+        public void Delete(List<TimelineObject> selectedObjects)
+        {
+            foreach (var obj in selectedObjects)
+            {
+                // TimelineObject に紐付けられているファイルパスから WaveStream を取得
+                var filePath = obj.FilePath;
+
+                // ファイルパスに基づいて WaveStream をリストから検索
+                if (_filePathWaveStreamMap.TryGetValue(filePath, out var waveStream) && waveStream is CustomWaveStream customWaveStream)
+                {
+                    // wavePlayer の取得
+                    if (_waveStreamPlayerMap.TryGetValue(waveStream, out var wavePlayer) && wavePlayer is CustomWavePlayer customWavePlayer)
+                    {
+                        customWavePlayer.Stop(); // 再生を停止
+                        customWavePlayer.Dispose(); // WavePlayer を解放
+                        _wavePlayers.Remove(customWavePlayer); // _wavePlayers リストから削除
+                        _waveStreamPlayerMap.Remove(waveStream); // マップから削除
+
+                        // WaveStream を解放し、リストから削除
+                        customWaveStream.Dispose();
+                        _waveStreams.Remove(customWaveStream); // _waveStreams リストから削除
+                        _filePathWaveStreamMap.Remove(filePath); // _filePathWaveStreamMap から削除
+                    }
+                }
+            }
+        }
+
+        // 現在の再生位置を取得する
+        public TimeSpan CurrentTime
+        {
+            get
+            {
+                if (_waveStreams.Count > 0)
+                    return _waveStreams[0].CurrentTime;
+                return TimeSpan.Zero;
+            }
+        }
+
+        // オーディオファイルの総再生時間を取得する
+        public TimeSpan TotalTime
+        {
+            get
+            {
+                if (_waveStreams.Count > 0)
+                    return _waveStreams[0].TotalTime;
+                return TimeSpan.Zero;
+            }
         }
     }
 
