@@ -16,6 +16,8 @@
             label1 = new Label();
             label2 = new Label();
             panel2 = new Panel();
+            label3 = new Label();
+            label5 = new Label();
             panel2.SuspendLayout();
             SuspendLayout();
             // 
@@ -46,7 +48,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(10, 64);
+            button1.Location = new Point(9, 110);
             button1.Name = "button1";
             button1.Size = new Size(87, 36);
             button1.TabIndex = 1;
@@ -56,7 +58,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(103, 64);
+            button2.Location = new Point(102, 110);
             button2.Name = "button2";
             button2.Size = new Size(87, 36);
             button2.TabIndex = 2;
@@ -91,17 +93,38 @@
             panel2.Size = new Size(298, 10);
             panel2.TabIndex = 1;
             // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(5, 60);
+            label3.Name = "label3";
+            label3.Size = new Size(143, 20);
+            label3.TabIndex = 5;
+            label3.Text = "Processing(%) : 00.0 ";
+            label3.Click += label3_Click;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(5, 83);
+            label5.Name = "label5";
+            label5.Size = new Size(133, 20);
+            label5.TabIndex = 7;
+            label5.Text = "Write (kB/s) : 00.00";
+            // 
             // Form2
             // 
             BackColor = SystemColors.ButtonHighlight;
-            ClientSize = new Size(320, 111);
+            ClientSize = new Size(320, 156);
+            Controls.Add(label5);
+            Controls.Add(label3);
             Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(panel2);
             Name = "Form2";
-            Text = "ExportProgressing";
+            Text = "Export Manager";
             panel2.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -113,5 +136,7 @@
         private Label label1;
         private Label label2;
         private Panel panel2;
+        private Label label3;
+        private Label label5;
     }
 }

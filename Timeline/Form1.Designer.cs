@@ -85,7 +85,7 @@
             panel1.BackColor = SystemColors.Desktop;
             panel1.Location = new Point(26, 29);
             panel1.Name = "panel1";
-            panel1.Size = new Size(834, 185);
+            panel1.Size = new Size(792, 185);
             panel1.TabIndex = 0;
             panel1.Paint += Timeline_panel1;
             // 
@@ -126,7 +126,7 @@
             // 
             // button2
             // 
-            button2.Location = new Point(435, 414);
+            button2.Location = new Point(384, 414);
             button2.Name = "button2";
             button2.Size = new Size(104, 29);
             button2.TabIndex = 2;
@@ -136,7 +136,7 @@
             // 
             // button3
             // 
-            button3.Location = new Point(545, 414);
+            button3.Location = new Point(494, 414);
             button3.Name = "button3";
             button3.Size = new Size(104, 29);
             button3.TabIndex = 3;
@@ -176,7 +176,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(655, 414);
+            button4.Location = new Point(604, 414);
             button4.Name = "button4";
             button4.Size = new Size(104, 29);
             button4.TabIndex = 6;
@@ -198,13 +198,13 @@
             // 
             hScrollBar1.Location = new Point(26, 217);
             hScrollBar1.Name = "hScrollBar1";
-            hScrollBar1.Size = new Size(834, 17);
+            hScrollBar1.Size = new Size(792, 17);
             hScrollBar1.TabIndex = 9;
             hScrollBar1.Scroll += Timeline_hScrollBar1;
             // 
             // button6
             // 
-            button6.Location = new Point(765, 414);
+            button6.Location = new Point(714, 414);
             button6.Name = "button6";
             button6.Size = new Size(104, 29);
             button6.TabIndex = 8;
@@ -324,9 +324,9 @@
             label8.AutoSize = true;
             label8.Location = new Point(13, 66);
             label8.Name = "label8";
-            label8.Size = new Size(72, 20);
+            label8.Size = new Size(62, 20);
             label8.TabIndex = 21;
-            label8.Text = "Character";
+            label8.Text = "Speaker";
             // 
             // textBox2
             // 
@@ -371,7 +371,7 @@
             groupBox1.Controls.Add(label5);
             groupBox1.Controls.Add(textBox1);
             groupBox1.Controls.Add(label6);
-            groupBox1.Location = new Point(875, 19);
+            groupBox1.Location = new Point(828, 19);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new Size(331, 329);
             groupBox1.TabIndex = 25;
@@ -387,7 +387,7 @@
             groupBox2.Controls.Add(trackBar4);
             groupBox2.Controls.Add(label9);
             groupBox2.Controls.Add(comboBox2);
-            groupBox2.Location = new Point(875, 354);
+            groupBox2.Location = new Point(828, 354);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(331, 159);
             groupBox2.TabIndex = 26;
@@ -438,9 +438,9 @@
             label9.AutoSize = true;
             label9.Location = new Point(18, 31);
             label9.Name = "label9";
-            label9.Size = new Size(72, 20);
+            label9.Size = new Size(62, 20);
             label9.TabIndex = 25;
-            label9.Text = "Character";
+            label9.Text = "Speaker";
             // 
             // comboBox2
             // 
@@ -455,7 +455,7 @@
             // 
             // button10
             // 
-            button10.Location = new Point(765, 448);
+            button10.Location = new Point(714, 448);
             button10.Name = "button10";
             button10.Size = new Size(104, 29);
             button10.TabIndex = 27;
@@ -465,7 +465,7 @@
             // 
             // button11
             // 
-            button11.Location = new Point(765, 483);
+            button11.Location = new Point(714, 483);
             button11.Name = "button11";
             button11.Size = new Size(104, 29);
             button11.TabIndex = 28;
@@ -478,7 +478,7 @@
             panel3.BackColor = Color.Gainsboro;
             panel3.Location = new Point(26, 242);
             panel3.Name = "panel3";
-            panel3.Size = new Size(833, 5);
+            panel3.Size = new Size(751, 5);
             panel3.TabIndex = 2;
             // 
             // Form1
@@ -486,7 +486,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = SystemColors.Window;
-            ClientSize = new Size(1216, 525);
+            ClientSize = new Size(1174, 525);
             Controls.Add(button11);
             Controls.Add(button10);
             Controls.Add(groupBox2);
