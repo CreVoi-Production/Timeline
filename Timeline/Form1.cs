@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 using NAudio.CoreAudioApi;
 using System.Media;
+using ExportProgressDialog;
 
 namespace Timeline
 {
@@ -576,24 +577,102 @@ namespace Timeline
         }
 
         //　Exportボタンを描画する(録音式)
-        private void Export_button6(object sender, EventArgs e)
+        private async void Export_button6(object sender, EventArgs e)
         {
+            //using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            //{
+            //    saveFileDialog.Filter = "WAVファイル (*.wav)|*.wav"; // フィルタを設定
+            //    saveFileDialog.Title = "WAVファイルを保存";
+            //    saveFileDialog.DefaultExt = "wav"; // デフォルトの拡張子
+
+            //    if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            //    {
+            //        string outputFilePath = saveFileDialog.FileName;
+            //        sendfilePath = saveFileDialog.FileName;
+
+            //        // 録音と再生の開始
+            //        StartRecording(outputFilePath);
+            //        _audioPlayer.Play();
+            //    }
+            //}
+
+            // 保存ダイアログの表示
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
             {
-                saveFileDialog.Filter = "WAVファイル (*.wav)|*.wav"; // フィルタを設定
-                saveFileDialog.Title = "WAVファイルを保存";
-                saveFileDialog.DefaultExt = "wav"; // デフォルトの拡張子
+                saveFileDialog.Filter = "WAVファイル (*.wav)|*.wav";
+                saveFileDialog.Title = "保存先を指定";
+                saveFileDialog.FileName = "timeline_mix_output.wav";
 
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     string outputFilePath = saveFileDialog.FileName;
-                    sendfilePath = saveFileDialog.FileName;
 
-                    // 録音と再生の開始
-                    StartRecording(outputFilePath);
-                    _audioPlayer.Play();
+                    // WAVファイルの書き出し処理を実行
+                    await ExportTimelineMixToWav(outputFilePath);
                 }
             }
+        }
+
+        // タイムライン上のすべてのWaveOffsetStreamをミックスしてWAVに書き出す
+        private async Task ExportTimelineMixToWav(string outputFilePath)
+        {
+            // タイムライン上のオフセットストリームをミックス
+            var offsetStreams = _audioPlayer._waveOffsetStreams
+                                            .Where(stream => stream != null)
+                                            .Select(stream => stream.ToSampleProvider())
+                                            .ToList();
+
+            if (!offsetStreams.Any())
+            {
+                MessageBox.Show("ミックス対象のオフセットストリームがありません。");
+                return;
+            }
+
+            // MixingSampleProviderの初期化
+            var mixingSampleProvider = new MixingSampleProvider(offsetStreams);
+
+            // プログレスダイアログの表示
+            var progressDialog = new ExportProgressDialog.Form2();
+            progressDialog.Show(); // プログレスダイアログを表示
+
+            // WAVファイルに書き出し
+            using (var waveFileWriter = new WaveFileWriter(outputFilePath, mixingSampleProvider.WaveFormat))
+            {
+                float[] buffer = new float[1024];
+                int totalSamples = mixingSampleProvider.WaveFormat.SampleRate * 60; // 仮に1分間のサンプル数を想定（適宜調整）
+                int processedSamples = 0;
+
+                await Task.Run(() =>
+                {
+                    int samplesRead;
+                    while ((samplesRead = mixingSampleProvider.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        waveFileWriter.WriteSamples(buffer, 0, samplesRead);
+                        processedSamples += samplesRead;
+
+                        // 進捗を計算
+                        var progress = (double)processedSamples / totalSamples * 100;
+
+                        // プログレスダイアログを更新
+                        for (progress = 0; progress <= 100; progress += 10)
+                        {
+                            // 進捗を更新
+                            progressDialog.UpdateProgress(progress, $"進行状況: {progress}%");
+                        }
+                    }
+                });
+            }
+
+            // 書き出し後、MixingSampleProviderを揮発させる
+            mixingSampleProvider = null;
+
+            // プログレスダイアログを閉じる
+            progressDialog.Invoke((MethodInvoker)delegate
+            {
+                progressDialog.Close();
+            });
+
+            MessageBox.Show("WAVファイルの書き出しが完了しました。");
         }
 
         // 録音を開始する
@@ -1536,7 +1615,7 @@ namespace Timeline
 
         private List<CustomWavePlayer> _wavePlayers;
         private List<CustomWaveStream> _waveStreams;
-        private List<CustomWaveOffsetStream> _waveOffsetStreams;
+        public List<CustomWaveOffsetStream> _waveOffsetStreams;
         private Dictionary<WaveStream, IWavePlayer> _waveStreamPlayerMap;
         private Dictionary<string, WaveStream> _filePathWaveStreamMap;
         private Dictionary<string, WaveOffsetStream> _filePathWaveOffsetStreamMap;
@@ -1560,7 +1639,6 @@ namespace Timeline
         //　指定されたファイルパスからオーディオファイルを読み込む
         public TimelineObject Load(string filePath)
         {
-
             var wavePlayer = new CustomWavePlayer(); // 引数なしのコンストラクターを使用
             var waveStream = new AudioFileReader(filePath);
 
@@ -1573,20 +1651,21 @@ namespace Timeline
 
             wavePlayer.Init(waveOffsetStream); // CustomWavePlayerを初期化
             _wavePlayers.Add(wavePlayer);
+            _waveOffsetStreams.Add(waveOffsetStream); // オフセットストリームをリストに追加
 
             // waveOffsetStream を CustomWaveStream に変換
-            var customWaveStream = new CustomWaveStream(waveOffsetStream); // ここを修正
+            var customWaveStream = new CustomWaveStream(waveOffsetStream);
 
-            _waveStreams.Add(customWaveStream);
+            _waveStreams.Add(customWaveStream); // waveStream をリストに追加
             _filePathWaveStreamMap[filePath] = customWaveStream; // waveStream をマップに追加
             _waveStreamPlayerMap[customWaveStream] = wavePlayer;
-            _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream;
+            _filePathWaveOffsetStreamMap[filePath] = waveOffsetStream; // offsetStream をマップに追加
 
             // Durationは、waveStreamから取得する
             TimeSpan duration = customWaveStream.TotalTime;
 
             // TimelineObjectを作成して情報を格納
-            var TimelineObject = new TimelineObject(
+            var timelineObject = new TimelineObject(
                 startTime: TimeSpan.Zero,
                 waveOffsetStream: waveOffsetStream,
                 duration: duration,
@@ -1596,9 +1675,9 @@ namespace Timeline
             {
                 IsSelected = false // 初期状態では選択されていないものとする
             };
-            return TimelineObject;
-        }
 
+            return timelineObject;
+        }
 
         // すべてのオーディオプレイヤーで再生する
         public void Play()

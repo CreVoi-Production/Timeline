@@ -70,6 +70,7 @@
             comboBox2 = new ComboBox();
             button10 = new Button();
             button11 = new Button();
+            panel3 = new Panel();
             ((System.ComponentModel.ISupportInitialize)trackBarTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar2).BeginInit();
@@ -472,6 +473,14 @@
             button11.UseVisualStyleBackColor = true;
             button11.Click += Local_button11;
             // 
+            // panel3
+            // 
+            panel3.BackColor = Color.Gainsboro;
+            panel3.Location = new Point(26, 242);
+            panel3.Name = "panel3";
+            panel3.Size = new Size(833, 5);
+            panel3.TabIndex = 2;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -495,6 +504,7 @@
             Controls.Add(panel1);
             Controls.Add(label3);
             Controls.Add(panel2);
+            Controls.Add(panel3);
             Name = "Form1";
             Text = "MiVoi";
             Load += Form1_Load;
@@ -550,5 +560,6 @@
         private TextBox textBox5;
         private Label label10;
         private Button button11;
+        private Panel panel3;
     }
 }
