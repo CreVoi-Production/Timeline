@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Timers;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Collections.Generic;
@@ -26,6 +27,7 @@ namespace Timeline
         private Timeline _timeline;
         private AudioPlayer _audioPlayer;
         private System.Windows.Forms.Timer _playbackTimer;
+        private System.Timers.Timer _playbackTimer2;
         private List<TimelineObject> timelineObjects = new List<TimelineObject>();
         private TimeSpan _currentPlaybackTime; //　現在の再生時間を保持する
         private bool _isPlaying; //　再生状態を示す
@@ -48,12 +50,13 @@ namespace Timeline
         public Form1()
         {
             InitializeComponent();
+            this.Load += Form1_Load;
 
             _timeline = new Timeline();
             _audioPlayer = new AudioPlayer();
 
             _playbackTimer = new System.Windows.Forms.Timer();
-            _playbackTimer.Interval = 100; // ミリ秒単位、ここでは100msごとに更新
+            _playbackTimer.Interval = 10; // ミリ秒単位、ここでは10msごとに更新
             _playbackTimer.Tick += PlaybackTimer_Tick;
 
             // TrackBar の初期設定
@@ -133,6 +136,55 @@ namespace Timeline
 
             // レイヤー線を描画する
             DrawLayerLines(g, numberOfLayers);
+
+            // 再生ヘッドを描画する
+            DrawPlayhead(g, scrollOffset);
+        }
+
+        // 再生ヘッドを描画するメソッド
+        private void DrawPlayhead(Graphics g, int scrollOffset)
+        {
+            int timelineWidth = panel1.Width;
+            TimeSpan currentPlaybackPosition = _audioPlayer.CurrentTime; // 現在の再生位置を取得
+            TimeSpan totalPlaybackTime = _timeline.TotalDuration; // 総再生時間
+
+            // 再生位置に基づいてX座標を計算
+            int xPosition = (int)((double)currentPlaybackPosition.Ticks / totalPlaybackTime.Ticks * timelineWidth) - scrollOffset;
+
+            // xPositionがパネルの範囲を超えないように制限
+            xPosition = Math.Max(0, Math.Min(xPosition, timelineWidth));
+
+            // 再生ヘッドの線を描画
+            using (Pen playheadPen = new Pen(Color.Red, 2)) // 赤い線を再生ヘッドとして使用
+            {
+                g.DrawLine(playheadPen, xPosition, 0, xPosition, panel1.Height);
+            }
+        }
+
+        private void StartPlayber()
+        {
+            // タイマー設定
+            _playbackTimer2 = new System.Timers.Timer(50); // 50ミリ秒ごとに更新
+
+            // タイマーイベントで再生ヘッド付近のみを再描画
+            _playbackTimer2.Elapsed += (s, e) =>
+            {
+                // 再生ヘッド付近のみ再描画
+                int playheadX = CalculatePlayheadXPosition();
+                panel1.Invalidate(new Rectangle(playheadX - 10, 0, 20, panel1.Height));
+            };
+            _playbackTimer2.AutoReset = true;
+            _playbackTimer2.Start();
+        }
+
+        private int CalculatePlayheadXPosition()
+        {
+            int timelineWidth = panel1.Width;
+            TimeSpan currentPlaybackPosition = _audioPlayer.CurrentTime;
+            TimeSpan totalPlaybackTime = _timeline.TotalDuration;
+
+            // 再生ヘッドの位置を計算
+            return (int)((double)currentPlaybackPosition.Ticks / totalPlaybackTime.Ticks * timelineWidth);
         }
 
         //　オブジェクトをタイムライン上に描画する
@@ -1483,7 +1535,7 @@ namespace Timeline
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            StartPlayber(); // フォームロード後にタイマーを開始
         }
 
         private void label5_Click(object sender, EventArgs e)
