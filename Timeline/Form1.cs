@@ -42,6 +42,8 @@ namespace Timeline
         private bool isRecording = false;
         private SerialPort serialPort;
         private string sendfilePath;
+        private bool isDragging = false;　// 再生ヘッドのドラッグ状態
+        private int startDragX;　// 再生ヘッドの開始位置
 
         private static readonly HttpClient client = new HttpClient();   // VOICEVOX クライアント
         private const string VOICEVOXurl = "http://127.0.0.1:50021";    // VOICEVOX サーバーアドレス
@@ -61,6 +63,11 @@ namespace Timeline
 
             // TrackBar の初期設定
             UpdateTrackBar(TimeSpan.Zero, TimeSpan.FromSeconds(10)); // 10秒のタイムライン
+
+            // 再生ヘッドのドラッグ移動
+            panel1.MouseDown += TimelinePanel_MouseDown;
+            panel1.MouseMove += TimelinePanel_MouseMove;
+            panel1.MouseUp += TimelinePanel_MouseUp;
 
             // ドラッグ＆ドロップの設定
             this.AllowDrop = true;
@@ -145,7 +152,7 @@ namespace Timeline
         private void DrawPlayhead(Graphics g, int scrollOffset)
         {
             int timelineWidth = panel1.Width;
-            TimeSpan currentPlaybackPosition = _audioPlayer.CurrentTime; // 現在の再生位置を取得
+            TimeSpan currentPlaybackPosition = _audioPlayer.GetCurrentTime; // 現在の再生位置を取得
             TimeSpan totalPlaybackTime = _timeline.TotalDuration; // 総再生時間
 
             // 再生位置に基づいてX座標を計算
@@ -164,7 +171,7 @@ namespace Timeline
         private void StartPlayber()
         {
             // タイマー設定
-            _playbackTimer2 = new System.Timers.Timer(50); // 50ミリ秒ごとに更新
+            _playbackTimer2 = new System.Timers.Timer(100); // 50ミリ秒ごとに更新
 
             // タイマーイベントで再生ヘッド付近のみを再描画
             _playbackTimer2.Elapsed += (s, e) =>
@@ -180,11 +187,64 @@ namespace Timeline
         private int CalculatePlayheadXPosition()
         {
             int timelineWidth = panel1.Width;
-            TimeSpan currentPlaybackPosition = _audioPlayer.CurrentTime;
+            TimeSpan currentPlaybackPosition = _audioPlayer.GetCurrentTime;
             TimeSpan totalPlaybackTime = _timeline.TotalDuration;
 
             // 再生ヘッドの位置を計算
             return (int)((double)currentPlaybackPosition.Ticks / totalPlaybackTime.Ticks * timelineWidth);
+        }
+
+        // 再生ヘッドのドラッグ開始
+        private void Panel1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (IsOverPlayhead(e.X)) // 再生ヘッド上かを確認
+            {
+                isDragging = true;
+                startDragX = e.X;
+            }
+        }
+
+        // 再生ヘッドのドラッグ中
+        private void Panel1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                int newPlayheadX = e.X;
+                UpdatePlayheadPosition(newPlayheadX);
+            }
+        }
+
+        // 再生ヘッドのドラッグ終了
+        private void Panel1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                isDragging = false;
+
+                // 新しい再生位置を設定
+                double progress = (double)e.X / panel1.Width;
+                TimeSpan newTime = TimeSpan.FromTicks((long)(_audioPlayer.TotalDuration.Ticks * progress));
+                // _audioPlayer.CurrentTime = newTime;
+            }
+        }
+
+        // 再生ヘッドの位置を更新するメソッド
+        private void UpdatePlayheadPosition(int xPosition)
+        {
+            int timelineWidth = panel1.Width;
+            double progress = (double)xPosition / timelineWidth;
+            TimeSpan newPosition = TimeSpan.FromTicks((long)(_audioPlayer.TotalDuration.Ticks * progress));
+
+            // _audioPlayer.CurrentTime = newPosition; // 再生位置を新しい位置に更新
+
+            panel1.Invalidate(); // 再描画して表示を更新
+        }
+
+        // 再生ヘッド上かどうかを確認するメソッド
+        private bool IsOverPlayhead(int mouseX)
+        {
+            int playheadX = CalculatePlayheadXPosition();
+            return Math.Abs(mouseX - playheadX) < 5; // 再生ヘッドのX位置に近いかを確認
         }
 
         //　オブジェクトをタイムライン上に描画する
@@ -556,7 +616,7 @@ namespace Timeline
             _isPlaying = false;
             _audioPlayer.Stop();
             _playbackTimer.Stop();
-            var currentTime = _audioPlayer.CurrentTime;
+            var currentTime = _audioPlayer.GetCurrentTime;
             label3.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
 
             _audioPlayer.Clean();
@@ -624,7 +684,7 @@ namespace Timeline
             _isPlaying = false;
             _audioPlayer.Stop();
             _playbackTimer.Stop();
-            var currentTime = _audioPlayer.CurrentTime;
+            var currentTime = _audioPlayer.GetCurrentTime;
             label3.Text = $"Playback Time: {currentTime.ToString(@"hh\:mm\:ss")}";
         }
 
@@ -680,37 +740,38 @@ namespace Timeline
                 return;
             }
 
+            // タイムライン内のオブジェクトの最終時間を取得
+            TimeSpan maxEndTime = _timeline.GetObjects().Max(obj => obj.EndTime);
+
             // MixingSampleProviderの初期化
             var mixingSampleProvider = new MixingSampleProvider(offsetStreams);
 
+            // サンプルを16ビットPCMに変換
+            var waveProvider16 = new SampleToWaveProvider16(mixingSampleProvider);
+
             // プログレスダイアログの表示
-            var progressDialog = new ExportProgressDialog.Form2();
-            progressDialog.Show(); // プログレスダイアログを表示
+            // var progressDialog = new ExportProgressDialog.Form2();
+            // progressDialog.Show(); // プログレスダイアログを表示
 
             // WAVファイルに書き出し
-            using (var waveFileWriter = new WaveFileWriter(outputFilePath, mixingSampleProvider.WaveFormat))
+            using (var waveFileWriter = new WaveFileWriter(outputFilePath, waveProvider16.WaveFormat))
             {
-                float[] buffer = new float[1024];
-                int totalSamples = mixingSampleProvider.WaveFormat.SampleRate * 60; // 仮に1分間のサンプル数を想定（適宜調整）
-                int processedSamples = 0;
+                byte[] buffer = new byte[1024];
+                int samplesRead;
+                TimeSpan currentTime = TimeSpan.Zero;
+                int bytesPerMillisecond = waveProvider16.WaveFormat.AverageBytesPerSecond / 1000;
 
                 await Task.Run(() =>
                 {
-                    int samplesRead;
-                    while ((samplesRead = mixingSampleProvider.Read(buffer, 0, buffer.Length)) > 0)
+                    while ((samplesRead = waveProvider16.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        waveFileWriter.WriteSamples(buffer, 0, samplesRead);
-                        processedSamples += samplesRead;
+                        // 経過時間を計算し、最終時間に達したらループを終了
+                        currentTime += TimeSpan.FromMilliseconds(samplesRead / bytesPerMillisecond);
 
-                        // 進捗を計算
-                        var progress = (double)processedSamples / totalSamples * 100;
+                        if (currentTime >= maxEndTime)
+                            break;
 
-                        // プログレスダイアログを更新
-                        for (progress = 0; progress <= 100; progress += 10)
-                        {
-                            // 進捗を更新
-                            progressDialog.UpdateProgress(progress, $"進行状況: {progress}%");
-                        }
+                        waveFileWriter.Write(buffer, 0, samplesRead);
                     }
                 });
             }
@@ -719,77 +780,77 @@ namespace Timeline
             mixingSampleProvider = null;
 
             // プログレスダイアログを閉じる
-            progressDialog.Invoke((MethodInvoker)delegate
-            {
-                progressDialog.Close();
-            });
+            // progressDialog.Invoke((MethodInvoker)delegate
+            // {
+            //     progressDialog.Close();
+            // });
 
             MessageBox.Show("WAVファイルの書き出しが完了しました。");
         }
 
-        // 録音を開始する
-        private void StartRecording(string filePath)
-        {
-            waveIn = new WaveInEvent();
-            waveIn.DeviceNumber = 0; // デフォルトのマイク
-            waveIn.WaveFormat = new WaveFormat(8000, 8, 1); // 8.0kHz、8bit、モノラル
+        //// 録音を開始する
+        //private void StartRecording(string filePath)
+        //{
+        //    waveIn = new WaveInEvent();
+        //    waveIn.DeviceNumber = 0; // デフォルトのマイク
+        //    waveIn.WaveFormat = new WaveFormat(8000, 8, 1); // 8.0kHz、8bit、モノラル
 
-            waveIn.DataAvailable += OnDataAvailable;
-            waveIn.RecordingStopped += OnRecordingStopped;
+        //    waveIn.DataAvailable += OnDataAvailable;
+        //    waveIn.RecordingStopped += OnRecordingStopped;
 
-            waveFileWriter = new WaveFileWriter(filePath, waveIn.WaveFormat);
+        //    waveFileWriter = new WaveFileWriter(filePath, waveIn.WaveFormat);
 
-            _audioPlayer.Reset();
-            waveIn.StartRecording();
-            _playbackTimer.Start();
-            isRecording = true;
+        //    _audioPlayer.Reset();
+        //    waveIn.StartRecording();
+        //    _playbackTimer.Start();
+        //    isRecording = true;
 
-            // 再生タイマーの設定
-            _playbackTimer = new System.Windows.Forms.Timer();
-            _playbackTimer.Interval = 100; // 100ミリ秒ごとに更新
-            _playbackTimer.Tick += OnPlaybackTick;
-            _playbackTimer.Start();
-        }
+        //    // 再生タイマーの設定
+        //    _playbackTimer = new System.Windows.Forms.Timer();
+        //    _playbackTimer.Interval = 100; // 100ミリ秒ごとに更新
+        //    _playbackTimer.Tick += OnPlaybackTick;
+        //    _playbackTimer.Start();
+        //}
 
-        // 再生タイマーのTickイベント
-        private void OnPlaybackTick(object sender, EventArgs e)
-        {
-            var currentTime = _audioPlayer.CurrentTime;
-            var maxEndTime = GetMaximumEndTime();
+        //// 再生タイマーのTickイベント
+        //private void OnPlaybackTick(object sender, EventArgs e)
+        //{
+        //    var currentTime = _audioPlayer.GetCurrentTime;
+        //    var maxEndTime = GetMaximumEndTime();
 
-            // maxEndTimeに達したら停止
-            if (currentTime >= maxEndTime)
-            {
-                StopRecording();
-                StopPlayback();
-            }
-        }
+        //    // maxEndTimeに達したら停止
+        //    if (currentTime >= maxEndTime)
+        //    {
+        //        StopRecording();
+        //        StopPlayback();
+        //    }
+        //}
 
-        // 録音を停止する
-        private void StopRecording()
-        {
-            if (isRecording)
-            {
-                waveIn.StopRecording();
-                isRecording = false;
-            }
-        }
+        //// 録音を停止する
+        //private void StopRecording()
+        //{
+        //    if (isRecording)
+        //    {
+        //        waveIn.StopRecording();
+        //        isRecording = false;
+        //    }
+        //}
 
-        // 録音データをファイルに書き込む
-        private void OnDataAvailable(object sender, WaveInEventArgs e)
-        {
-            if (waveFileWriter != null)
-            {
-                waveFileWriter.Write(e.Buffer, 0, e.BytesRecorded);
-            }
-        }
+        //// 録音データをファイルに書き込む
+        //private void OnDataAvailable(object sender, WaveInEventArgs e)
+        //{
+        //    if (waveFileWriter != null)
+        //    {
+        //        waveFileWriter.Write(e.Buffer, 0, e.BytesRecorded);
+        //    }
+        //}
 
-        // 録音停止後の処理
-        private void OnRecordingStopped(object sender, StoppedEventArgs e)
-        {
-            waveFileWriter?.Dispose();
-            waveFileWriter = null;
-        }
+        //// 録音停止後の処理
+        //private void OnRecordingStopped(object sender, StoppedEventArgs e)
+        //{
+        //    waveFileWriter?.Dispose();
+        //    waveFileWriter = null;
+        //}
 
         //　Sendボタンを描画する
         private async void Send_button10(object sender, EventArgs e)
@@ -1374,7 +1435,7 @@ namespace Timeline
         //　再生中の時間をリアルタイムで更新し、再生が終了したかチェックする
         private void PlaybackTimer_Tick(object sender, EventArgs e)
         {
-            var currentTime = _audioPlayer.CurrentTime;
+            var currentTime = _audioPlayer.GetCurrentTime;
 
             // タイムラインが終了地点に達したかを確認
             if (currentTime >= _audioPlayer.TotalTime)
@@ -1675,6 +1736,9 @@ namespace Timeline
         public WaveStream waveStream { get; set; }
         public IWavePlayer wavePlayer { get; set; }
 
+        public TimeSpan CurrentTime { get; private set; }
+        public TimeSpan TotalDuration { get; private set; }
+
         // 初期化
         public AudioPlayer()
         {
@@ -1808,8 +1872,19 @@ namespace Timeline
             }
         }
 
+        // 現在の再生時間更新する
+        public void SetCurrentTime(TimeSpan time)
+        {
+            if (time >= TimeSpan.Zero && time <= TotalDuration)
+            {
+                CurrentTime = time;
+                // 実際のオーディオデータの再生位置もここで更新する
+                // 内部の再生エンジンに位置を移動させるコードを追加
+            }
+        }
+
         // 現在の再生位置を取得する
-        public TimeSpan CurrentTime
+        public TimeSpan GetCurrentTime
         {
             get
             {

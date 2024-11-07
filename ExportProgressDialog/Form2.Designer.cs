@@ -111,6 +111,7 @@
             label5.Size = new Size(133, 20);
             label5.TabIndex = 7;
             label5.Text = "Write (kB/s) : 00.00";
+            label5.Click += label5_Click;
             // 
             // Form2
             // 
